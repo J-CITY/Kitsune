@@ -1,0 +1,3 @@
+CURRENT_PLAYLIST = "current"
+
+

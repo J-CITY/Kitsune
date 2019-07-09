@@ -1,0 +1,12 @@
+
+.vscode/settings.json
+*.pyc
+cash/cash.json
+lib.db
+config
+playlists/11
+playlists/Good
+playlists/test
+playlists/test2
+playlists/testb
+playlists/testBrowser

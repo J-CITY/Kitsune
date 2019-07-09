@@ -1,0 +1,349 @@
+{
+	"useInternet": true,
+	"cash_folder": "PATH_TO_CASH_FOLDER",
+	"playlist_folder": "playlists",
+	"download_folder": "PATH_TO_MUSIC_DOWNLOAD_FOLDER",
+	"root_dir":"PATH_TO_MUSIC_FOLDER",
+	"sound_cloud": {
+		"client_id": "",
+		"client_secret": "",
+		"username": "",
+		"password": "",
+		"bpm": 0,
+		"search_pages": 2
+	},
+	"bar": {
+		"start_char": "",
+		"end_char": "",
+		"prev_char": "◈",
+		"cur_char": "◆",
+		"next_char": "◇"
+	},
+	"lastfm": {
+		"apikey": "",
+		"lang": "en"
+	},
+	"upBar": [
+	{
+		"divider": " ",
+		"left_size": 1,
+		"left": [
+			{
+				"color": "green:normal:black",
+				"data": "artist"
+			}
+		],
+		"centr_size": 1,
+		"centr": [
+			{
+				"color": "red:normal:black",
+				"data": "album"
+			}
+		],
+		"right_size": 1,
+		"right": [
+			{
+				"color": "blue:normal:black",
+				"data": "song"
+			}
+		]
+	},
+	{
+		"divider": "-",
+		"left_size": 1,
+		"left": [
+			{
+				"color": "green:normal:black",
+				"data": "genre"
+			}
+		],
+		"centr_size": 1,
+		"centr": [
+			{
+				"color": "red:normal:black",
+				"data": "%-[-"
+			},
+			{
+				"color": "red:normal:black",
+				"data": "mode"
+			},
+			{
+				"color": "red:normal:black",
+				"data": "%-]-"
+			}
+		],
+		"right_size": 1,
+		"right": [
+			{
+				"color": "blue:normal:black",
+				"data": "%<)) "
+			},
+			{
+				"color": "blue:normal:black",
+				"data": "volume"
+			}
+		]
+	}
+	],
+
+	"downBar": [
+		{
+		"divider": " ",
+		"left_size": 1,
+		"left": [
+			{
+				"color": "green:normal:black",
+				"data": "progress"
+			}
+		],
+		"centr_size": 0,
+		"centr": [
+		],
+		"right_size": 0,
+		"right": [
+		]
+		},
+		{
+		"divider": " ",
+		"left_size": 1,
+		"left": [
+			{
+				"color": "blue:normal:black",
+				"data": "curLength"
+			}
+		],
+		"centr_size": 0,
+		"centr": [
+		],
+		"right_size": 1,
+		"right": [
+			{
+				"color": "blue:normal:black",
+				"data": "length"
+			}
+		]
+		}
+	],
+
+	"main_playlist": {
+		"title": true,
+		"choice_char": ">",
+		"item_char": " ",
+		"play_char": "*",
+		"separate_char": "|",
+		"columns": [
+			{
+				"color": "blue:normal:white",
+				"choice_color": "black:normal:blue",
+				"play_color": "white:normal:black",
+				"data": "id",
+				"width": "<5%",
+				"title": "ID"
+			},
+			{
+				"color": "green:normal:black",
+				"choice_color": "black:normal:green",
+				"play_color": "white:normal:black",
+				"data": "artist",
+				"width": "^50%",
+				"title": "ARTIST"
+			},
+			{
+				"color": "red:normal:black",
+				"choice_color": "black:normal:red",
+				"play_color": "white:normal:black",
+				"data": "song",
+				"width": ">45%",
+				"title": "SONG"
+			}
+		]
+	},
+	"browser": {
+		"title": true,
+		"color": "blue:normal:black",
+		"color_choice": "black:normal:blue",
+		"dir_char": "+ ",
+		"file_char": " ",
+		"choice_char": ">",
+		"item_char": " "
+	},
+	"playlists": {
+		"title": true,
+		"color": "red:normal:black",
+		"color_choice": "black:normal:red",
+		"color_not_focus": "black:normal:blue",
+		"choice_char": ">",
+		"item_char": " ",
+		"title_playlists": "Playlists",
+		"title_playlist": "Playlist"
+	},
+	"search": {
+		"title": true,
+		"color": "red:normal:black",
+		"color_choice": "black:normal:red",
+		"color_not_focus": "black:normal:blue",
+		"choice_char": ">",
+		"item_char": " ",
+		"title_db": "Database",
+		"title_sc": "SoundCloud"
+	},
+	"medialib": {
+		"title": true,
+		"color": "red:normal:black",
+		"color_choice": "black:normal:red",
+		"color_not_focus": "black:normal:blue",
+		"choice_char": ">",
+		"item_char": " ",
+		"title_artist": "Artist",
+		"title_album": "Albums",
+		"title_song": "Songs"
+	},
+	"clock": {
+		"comment": "Rainbow only for analog and digital type",
+		"comment": "rainbow param apply for all clock | standard",
+		"type": "digital",
+		"need_seconds": true,
+		"need_calendar": true,
+		"need_border": true,
+		"bg_color": "black",
+		"border": "+:+:+:+:|:-",
+		"analog": {
+			"centr_color": "red:normal:black",
+			"hour_color": "red:normal:black",
+			"minutes_color": "blue:normal:black",
+			"seconds_color": "yellow:normal:black",
+			"radius": 7
+		},
+		"binary": {
+			"active_color": "red:normal:black",
+			"hide_color": "white:normal:black"
+		},
+		"digital": {
+			"color": "green:normal:black",
+			"font": "ncmpcpp"
+		}
+	},
+	"equalizer": {
+		"color": "red:normal:black",
+		"color_choice": "black:normal:red",
+		"bar_less": "=",
+		"bar_more": "-"
+	},
+	"dialog": {
+		"color": "white:normal:black"
+	},
+	"visualization": {
+		"comment": "progress:red:normal:black:green:normal:white",
+		"comment": "rainbow",
+		"comment": "rainbow_h",
+		"comment": "rainbow_v",
+		"bg_color": "black",
+		"visualization_types": "ellipse:log_spiral:ferma_spiral:arhimed_spiral:kornu_spiral",
+		"wave": {
+			"is_stereo": false,
+			"type": "wave",
+			"color": "rainbow",
+			"symbol": "*"
+		},
+		"spectrum": {
+			"is_stereo": false,
+			"color": "rainbow_p",
+			"symbol": "#",
+			"type": "spectrum"
+		},
+		"lorenz": {
+			"comment": "dont have stereo",
+			"is_stereo": false,
+			"color": "rainbow",
+			"symbol": "*",
+			"type": "lorenz"
+		},
+		"kassini": {
+			"comment": "dont have progress mod",
+			"is_stereo": true,
+			"color": "rainbow_c",
+			"symbol": "*",
+			"type": "kassini"
+		},
+		"circle": {
+			"comment": "dont have progress mod",
+			"is_stereo": true,
+			"color": "rainbow_c",
+			"symbol": "*",
+			"type": "circle"
+		},
+		"ellipse": {
+			"comment": "dont have progress mod",
+			"is_stereo": true,
+			"color": "rainbow",
+			"symbol": "*",
+			"type": "ellipse"
+		},
+		"sin_spiral": {
+			"comment": "dont have progress mod",
+			"is_stereo": true,
+			"color": "rainbow",
+			"symbol": "*",
+			"type": "sin_spiral"
+		},
+		"log_spiral": {
+			"comment": "dont have progress mod",
+			"is_stereo": true,
+			"color": "rainbow",
+			"symbol": "*",
+			"type": "log_spiral"
+		},
+		"ferma_spiral": {
+			"comment": "dont have progress mod",
+			"is_stereo": false,
+			"color": "rainbow",
+			"symbol": "*",
+			"type": "ferma_spiral"
+		},
+		"arhimed_spiral": {
+			"comment": "dont have progress mod",
+			"is_stereo": true,
+			"color": "rainbow",
+			"symbol": "*",
+			"type": "arhimed_spiral"
+		},
+		"kornu_spiral": {
+			"comment": "dont have progress mod",
+			"is_stereo": true,
+			"color": "rainbow",
+			"symbol": "*",
+			"type": "kornu_spiral"
+		},
+		"epitrohoida": {
+			"comment": "dont have progress mod",
+			"is_stereo": false,
+			"color": "rainbow",
+			"symbol": "*",
+			"h": "R+r",
+			"type": "epitrohoida"
+		},
+		"gipotrohoida": {
+			"comment": "dont have progress mod",
+			"is_stereo": true,
+			"color": "rainbow",
+			"symbol": "*",
+			"h": "0.5",
+			"type": "gipotrohoida"
+		},
+		"square": {
+			"comment": "dont have progress mod",
+			"is_stereo": false,
+			"color": "red:normal:black",
+			"symbol": "*",
+			"type": "square",
+			"squareSize": 10
+		}
+	},
+	"artist_info": {
+		"color": "red:normal:white"
+	},
+	"lyrics": {
+		"color": "red:normal:white"
+	},
+	"bg_color": "black"
+}
