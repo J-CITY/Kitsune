@@ -3,7 +3,7 @@ Kitsune - console music player
 
 Powerful console music player.
 
-![Screenshot](https://github.com/J-CITY/Kitsune/blob/master/screens/0.png)
+![Screenshot](https://github.com/J-CITY/Kitsune/blob/master/screens/main.png)
 
 # Description
 Powerful console music player written with Python.
@@ -46,69 +46,71 @@ Press `i` to see shotrcurds.
 
 Main playlist:
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/0.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/0.jpg)
 
 Browser
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/1.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/1.jpg)
 
 Playlists
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/2.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/2.jpg)
 
 Medialib
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/3.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/3.jpg)
 
 Equalizer
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/4.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/4.jpg)
 
 Artist info
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/5.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/5.jpg)
 
 Lirycs
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/6.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/6.jpg)
 
 Search
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/7.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/7.jpg)
 
 Clock binary
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/8.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/8.jpg)
 
 Info
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/9.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/9.jpg)
 
 Add song to playlist dialog
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/10.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/10.jpg)
 
 Clock
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/11.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/11.jpg)
 
 Visualization
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/12.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/0.jpg)
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/13.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/12.jpg)
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/14.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/13.jpg)
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/15.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/14.jpg)
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/16.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/15.jpg)
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/17.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/16.jpg)
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/18.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/17.jpg)
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/19.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/18.jpg)
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/20.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/19.jpg)
+
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/20.jpg)
 
