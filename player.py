@@ -126,6 +126,9 @@ class Player:
 		
 		self.setEqParams()
 
+		self.presenter.createNotifySong(self.playlist[self.playlistId].artist, 
+			self.playlist[self.playlistId].album, self.playlist[self.playlistId].song)
+
 	def stop(self):
 		self.isPlay = False
 		BASS_ChannelStop(self.streams[0])

@@ -6,13 +6,30 @@ from asciimatics.widgets import KeyboardEvent
 
 from db import *
 
+from gui.utils.utils import createNotify
+
+import threading
+
 class Presenter:
 	def __init__(self, config):
 		self.config = config
 		self.song = None
 
-	#	self.player = player
-	#	self.gui = gui
+	def worker(self, artist, album, song):
+		res = self.lastfmSaveAlbum(artist, album)
+		path = self.config.cash_folder + ("/album.png" if res else "/defAlbum.png")
+		createNotify(artist, album + " - " + song, path, self.config.notify_wait)
+
+	def createNotify(self, title="", msg="", ico=""):
+		createNotify(title, msg, ico, self.config.notify_wait)
+
+	def createNotifySong(self, artist="", album="",  song=""):
+		if artist=="" or album=="" or  song=="":
+			createNotify(artist, album + " - " + song, self.config.cash_folder + "/defAlbum.png", self.config.notify_wait)
+			return
+		t = threading.Thread(target=self.worker, args=(artist, album, song, ))
+		t.start()
+
 	def setPlayer(self, player):
 		self.player = player
 		
@@ -69,6 +86,12 @@ class Presenter:
 			if not self.config.useInternet:
 				return ""
 			return self.lastfm.getArtistBio(tag.artist)
+
+	def lastfmSaveAlbum(self, artist, album):
+		return self.lastfm.saveAlbumArt(artist, album)
+
+	def lastfmGetAlbumUrl(self, artist, album):
+		return self.lastfm.getAlbumImageUrl(artist, album)
 
 	def dbSelect(self, e):
 		return self.db.select(e)

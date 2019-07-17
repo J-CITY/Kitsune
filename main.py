@@ -76,7 +76,7 @@ if config.useInternet:
 	presenter.setSoundCloud(sc)
 	presenter.setLastfm(lastfm)
 	presenter.setLyricsWiki(lyricsWiki)
-
+	lastfm.setPresenter(presenter)
 
 db = Database()
 db.PATH = config.root_dir

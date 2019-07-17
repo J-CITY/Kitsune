@@ -5,6 +5,24 @@ if parentPath not in sys.path:
 	
 from asciimatics.widgets import *
 
+from strings import KITSUNE, OS_WIN, OS_LINUX
+
+toaster = None
+if os.name == OS_LINUX:
+	import notify2
+	notify2.init(KITSUNE)
+else:
+	from wintoast import getToast
+
+def createNotify(title="", message="", ico="", wait=1000):
+	if os.name == OS_LINUX:
+		n = notify2.Notification(title, message, ico)
+		n.set_urgency(notify2.URGENCY_NORMAL)
+		n.set_timeout(wait)
+	else:
+		getToast(title, message, icon=ico, duration=wait, appId=KITSUNE).show()
+
+
 ADD_END = 0
 ADD_BEGIN = 1
 ADD_AFTER = 2

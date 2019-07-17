@@ -4,6 +4,7 @@
 	"playlist_folder": "playlists",
 	"download_folder": "PATH_TO_MUSIC_DOWNLOAD_FOLDER",
 	"root_dir":"PATH_TO_MUSIC_FOLDER",
+	"notify_wait": "short",
 	"sound_cloud": {
 		"client_id": "",
 		"client_secret": "",

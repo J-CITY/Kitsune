@@ -4,3 +4,5 @@ tinytag
 six
 pylast
 PyLyrics
+urllib
+win10toast or (notify2 for linux)

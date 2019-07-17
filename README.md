@@ -8,6 +8,8 @@ Powerful console music player.
 # Description
 Powerful console music player written with Python.
 
+I think this should work on Linux, but I have not tested ¯\\_(ツ)_/¯
+
 # Dependencies (Python x64)
 * use BASSlib
 
@@ -17,6 +19,8 @@ Powerful console music player written with Python.
 * six
 * pylast
 * PyLyrics
+* urllib
+* win10toast or (notify2 for linux)
 
 # Usage
 
