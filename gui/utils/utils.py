@@ -12,7 +12,7 @@ if os.name == OS_LINUX:
 	import notify2
 	notify2.init(KITSUNE)
 else:
-	from wintoast import getToast
+	from tinyWinToast import getToast
 
 def createNotify(title="", message="", ico="", wait=1000):
 	if os.name == OS_LINUX:
