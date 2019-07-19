@@ -20,13 +20,15 @@ I think this should work on Linux, but I have not tested ¯\\_(ツ)_/¯
 * pylast
 * PyLyrics
 * urllib
-* win10toast or (notify2 for linux)
+* [tinyWinToast](https://github.com/J-CITY/tinyWinToast "tinyWinToast") or ([notify2](https://pypi.org/project/notify2/ "notify2") for linux)
 
 # Usage
 
-See config.h to get information about player configuration.
+See "config" to get information about player configuration.
 
-Press `i` to see shotrcurds.
+To make it work, fill in the fields in "sound_cloud" and "lastfm" and delete all //comments
+
+Press `i` in any tab to see shotrcurds.
 
 # Features
 

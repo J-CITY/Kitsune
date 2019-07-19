@@ -10,10 +10,10 @@
 		"client_secret": "",
 		"username": "",
 		"password": "",
-		"bpm": 0,
+		"bpm": 0,//quality of music
 		"search_pages": 2
 	},
-	"bar": {
+	"bar": {//progerss bar style
 		"start_char": "",
 		"end_char": "",
 		"prev_char": "◈",
@@ -24,25 +24,54 @@
 		"apikey": "",
 		"lang": "en"
 	},
-	"upBar": [
+	"upBar": [//app bar configuration
 	{
 		"divider": " ",
 		"left_size": 1,
-		"left": [
+		"left": [//left data
 			{
-				"color": "green:normal:black",
+				"color": "green:normal:black",//FRONT:STYLE:BACK
+				//COLORS
+				//black
+				//red
+				//green
+				//yellow
+				//blue
+				//magenta
+				//cyan
+				//white
+				//STYLE
+				//bold
+				//normal
+				//reverse
+				//underline
+				
 				"data": "artist"
+
+				//DATA
+				//url
+				//artist
+				//album
+				//song
+				//fileName
+				//year
+				//genre
+				//coverart
+				//length
+				//curLength'
+				//id
+				//globalId
 			}
 		],
 		"centr_size": 1,
-		"centr": [
+		"centr": [//center data
 			{
 				"color": "red:normal:black",
 				"data": "album"
 			}
 		],
 		"right_size": 1,
-		"right": [
+		"right": [//right data
 			{
 				"color": "blue:normal:black",
 				"data": "song"
@@ -50,7 +79,7 @@
 		]
 	},
 	{
-		"divider": "-",
+		"divider": "-",//separate symbol default is SPACE
 		"left_size": 1,
 		"left": [
 			{
@@ -87,14 +116,14 @@
 	}
 	],
 
-	"downBar": [
+	"downBar": [//down bar
 		{
 		"divider": " ",
 		"left_size": 1,
 		"left": [
 			{
 				"color": "green:normal:black",
-				"data": "progress"
+				"data": "progress"//it is progress bar
 			}
 		],
 		"centr_size": 0,
@@ -207,7 +236,8 @@
 		"need_calendar": true,
 		"need_border": true,
 		"bg_color": "black",
-		"border": "+:+:+:+:|:-",
+		"border": "+:+:+:+:|:-", // border around clock
+		//3 types of clock
 		"analog": {
 			"centr_color": "red:normal:black",
 			"hour_color": "red:normal:black",
@@ -230,15 +260,17 @@
 		"bar_less": "=",
 		"bar_more": "-"
 	},
-	"dialog": {
+	"dialog": {//it is params windows or info windows
 		"color": "white:normal:black"
 	},
 	"visualization": {
+		// it is summprt more interesting colors (rainbow ...)
 		"comment": "progress:red:normal:black:green:normal:white",
 		"comment": "rainbow",
 		"comment": "rainbow_h",
 		"comment": "rainbow_v",
 		"bg_color": "black",
+		//you can select many different types of visualization (some of this ugly)
 		"visualization_types": "ellipse:log_spiral:ferma_spiral:arhimed_spiral:kornu_spiral",
 		"wave": {
 			"is_stereo": false,
