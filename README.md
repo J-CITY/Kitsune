@@ -28,7 +28,7 @@ See "config" to get information about player configuration.
 
 To make it work, fill in the fields in "sound_cloud" and "lastfm" and delete all //comments
 
-Press `i` in any tab to see shotrcurds.
+Press `i` in any tab to see shortcuts.
 
 # Features
 
