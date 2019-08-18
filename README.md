@@ -26,7 +26,9 @@ I think this should work on Linux, but I have not tested ¯\\_(ツ)_/¯
 
 See "config" to get information about player configuration.
 
-To make it work, fill in the fields in "sound_cloud" and "lastfm" and delete all //comments
+To make it work, fill in config fields "sound_cloud" and "lastfm" and delete all //comments
+
+Run main.py -db to create sungs database
 
 Press `i` in any tab to see shortcuts.
 
