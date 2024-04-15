@@ -5,6 +5,9 @@
 	"download_folder": "PATH_TO_MUSIC_DOWNLOAD_FOLDER",
 	"root_dir":"PATH_TO_MUSIC_FOLDER",
 	"notify_wait": "short",
+	"yandex_music": {
+		"token": ""
+	},
 	"sound_cloud": {
 		"client_id": "",
 		"client_secret": "",
@@ -23,6 +26,9 @@
 	"lastfm": {
 		"apikey": "",
 		"lang": "en"
+	},
+	"lirycsApi": {
+		"apikey": ""
 	},
 	"upBar": [//app bar configuration
 	{

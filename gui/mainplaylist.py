@@ -2,77 +2,62 @@ import os, sys
 parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
+	
 from asciimatics.widgets import *
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
+from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.utils.utils import getColor, getAttr, ColorTheme
 from gui.utils.widget import CustomFrame, CustomMainPlaylistBox
-
-from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 from gui.dialog import *
 from gui.dialog_info import InfoDialog
 
 class MainPlaylistFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(MainPlaylistFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="MainPlaylist", bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name="MainPlaylist", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
 
-		self.upBar = upBar
-		self.downBar = downBar
-
-		i = 0
-		for l in upBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(upBar.lables[i], 0)
-			_l.add_widget(upBar.lables[i+1], 1)
-			_l.add_widget(upBar.lables[i+2], 2)
-			i+=3
+		self.addUpBar()
 		
 		layout = Layout([1], fill_frame=True)
 		self.add_layout(layout)
-
-		csize = []
+		columnSize = []
 		colors = []
-		ccolors = []
-		pcolors = []
+		choiceColors = []
+		playColors = []
 		data = []
 		titles = []
 		for itm in config.main_playlist.columns:
 			data.append(itm.data)
-			csize.append(itm.width)
+			columnSize.append(itm.width)
 			c = itm.color.split(':')
 			colors.append(ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2])))
 			c = itm.choice_color.split(':')
-			ccolors.append(ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2])))
+			choiceColors.append(ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2])))
 			c = itm.play_color.split(':')
-			pcolors.append(ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2])))
+			playColors.append(ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2])))
 			if config.main_playlist.title:
 				titles.append(itm.title)
 		
 		self.table = CustomMainPlaylistBox(Widget.FILL_FRAME,
-			csize,
+			columnSize,
 			colors,
-			ccolors,
-			pcolors,
+			choiceColors,
+			playColors,
 			data,
 			[],
 			titles,
 			name="main_playlist",
 			on_select=self._play)
+
 		self.table.choiceCh = config.main_playlist.choice_char
 		self.table.itemCh = config.main_playlist.item_char
 		self.table.playCh = config.main_playlist.play_char
 
 		layout.add_widget(self.table)
 
-		i = 0
-		for l in downBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(downBar.lables[i], 0)
-			_l.add_widget(downBar.lables[i+1], 1)
-			_l.add_widget(downBar.lables[i+2], 2)
-			i+=3
+		self.addDownBar()
 		self.fix()
 
 	def process_event(self, event):
@@ -84,13 +69,13 @@ class MainPlaylistFrame(CustomFrame):
 			if event.key_code in [ord('e')]:
 				self.presenter.mainPlaylistSetPlayId(self.table.value)
 				self.presenter.playerPlayById(self.table.value)
-			if event.key_code in [ord('j')]:#swap
+			if event.key_code in [ord('j')]:#swap prev
 				_from = self.table._line
 				_to = self.table._line-1 if self.table._line > 0 else self.table._line
 				self.presenter.playerSwap(_from, _to)
 				self.table._line = max(0, self.table._line - 1)
 				self.table.value = self.table._options[self.table._line][1]
-			if event.key_code in [ord('k')]:#swap
+			if event.key_code in [ord('k')]:#swap next
 				_from = self.table._line
 				_to = self.table._line+1 if self.table._line < len(self.table._options)-1 else self.table._line
 				self.presenter.playerSwap(_from, _to)
@@ -142,7 +127,7 @@ class MainPlaylistFrame(CustomFrame):
 	def setPresenter(self, p):
 		self.presenter = p
 
-	def getId(self):
+	def getCurrentLineId(self):
 		return self.table._line
 
 	def _play(self):

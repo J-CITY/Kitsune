@@ -3,9 +3,12 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 from asciimatics.widgets import *
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from gui.utils.utils import ColorTheme, getColor, getAttr, ADD_END, ADD_BEGIN, ADD_AFTER, ADD_BEFORE
 from gui.utils.widget import CustomText
+from functools import partial
 
 class AddMusicDialog(Frame):
 

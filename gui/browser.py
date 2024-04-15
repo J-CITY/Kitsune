@@ -8,6 +8,8 @@ from gui.utils.widget import CustomFrame, CustomFileBrowser
 from gui.utils.utils import getColor
 from tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from gui.dialog import AddMusicDialog, ADD_END,ADD_BEGIN,ADD_AFTER,ADD_BEFORE
 
@@ -17,18 +19,9 @@ from gui.dialog_info import InfoDialog
 class BrowserFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(BrowserFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Browser", bg=getColor(config.bg_color))
-		self.upBar = upBar
-		self.downBar = downBar
+			screen, screen.height, screen.width, has_border=False, name="Browser", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
 
-		i = 0
-		for l in upBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(upBar.lables[i], 0)
-			_l.add_widget(upBar.lables[i+1], 1)
-			_l.add_widget(upBar.lables[i+2], 2)
-			i+=3
+		self.addUpBar()
 		
 		layout = Layout([1], fill_frame=True)
 		self.add_layout(layout)
@@ -40,14 +33,7 @@ class BrowserFrame(CustomFrame):
 								 on_select=self._play,
 								 formats=[".mp3", ".flac", ".wav"])
 		layout.add_widget(self.browser)
-		i = 0
-		for l in downBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(downBar.lables[i], 0)
-			_l.add_widget(downBar.lables[i+1], 1)
-			_l.add_widget(downBar.lables[i+2], 2)
-			i+=3
+		self.addDownBar()
 		
 		self.fix()
 

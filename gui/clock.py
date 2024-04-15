@@ -10,6 +10,8 @@ from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.dialog import AddMusicDialog
 from asciimatics.effects import Print, Clock
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from gui.utils.utils import getColor, getAttr
 from gui.utils.widget import CustomFigletText, CustomFrame
@@ -19,33 +21,12 @@ from gui.dialog_info import InfoDialog
 class ClockFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(ClockFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Clock", bg=getColor(config.bg_color))
-		self.upBar = upBar
-		self.downBar = downBar
-		self.dup = 0
-		self.ddown = 0
-		dh = 0
-		i = 0
-		for l in upBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(upBar.lables[i], 0)
-			_l.add_widget(upBar.lables[i+1], 1)
-			_l.add_widget(upBar.lables[i+2], 2)
-			i+=3
-			dh+=1
-			self.dup += 1
-			
-		i = 0
-		for l in downBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(downBar.lables[i], 0)
-			_l.add_widget(downBar.lables[i+1], 1)
-			_l.add_widget(downBar.lables[i+2], 2)
-			i+=3
-			dh+=1
-			self.ddown += 1
+			screen, screen.height, screen.width, has_border=False, name="Clock", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+
+		self.addUpBar()
+
+	
+		self.addDownBar()
 
 		_font = config.clock.type
 		if _font == "digital":

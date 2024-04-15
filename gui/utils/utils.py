@@ -13,6 +13,9 @@ if os.name == OS_LINUX:
 	notify2.init(KITSUNE)
 else:
 	from tinyWinToast import getToast
+from wcwidth import wcswidth
+from wcwidth import wcwidth
+from tag_controller import Tag, Playlist
 
 def createNotify(title="", message="", ico="", wait=1000):
 	if os.name == OS_LINUX:
@@ -28,8 +31,8 @@ ADD_BEGIN = 1
 ADD_AFTER = 2
 ADD_BEFORE = 3
 
-def getColor(c):
-	return {
+def getColor(c: str) -> int:
+	map = {
 		'black': 0,
 		'red': 1,
 		'green': 2,
@@ -38,23 +41,29 @@ def getColor(c):
 		'magenta': 5,
 		'cyan': 6,
 		'white': 7
-	}[c]
+	}
+	if c not in map:
+		return 0 #default value
+	return map[c]
 	
-def getAttr(a):
-	return {
+def getAttr(a: str) -> int:
+	map = {
 		'bold': 1,
 		'normal': 2,
 		'reverse': 3,
 		'underline': 4
-	}[a]
+	}
+	if a not in map:
+		return 2 #default value
+	return map[a]
 
 class ColorTheme:
-	def __init__(self, color, attr, bg):
+	def __init__(self, color: int, attr: int, bg: int):
 		self.color = color
 		self.attr = attr
 		self.bg = bg
 
-def split_text(text, width, height, unicode_aware=True):
+def split_text(text: str, width: int, height: int, unicode_aware=True):
 	tokens = text.split(" ")
 	result = []
 	current_line = ""
@@ -80,7 +89,7 @@ def split_text(text, width, height, unicode_aware=True):
 			result[i] = line[:width - 3] + "..."
 	return result
 
-def _find_min_start(text, max_width, unicode_aware=True, at_end=False):
+def _find_min_start(text: str, max_width: int, unicode_aware=True, at_end=False):
 	result = 0
 	string_len = wcswidth if unicode_aware else len
 	char_len = wcwidth if unicode_aware else lambda x: 1
@@ -98,9 +107,9 @@ import json
 from collections import namedtuple
 from tag_controller import *
 
-def savePlaylist(pl, path):
+def savePlaylist(playlist: Playlist, path: str):
 	saveList = []
-	for i, t in enumerate(pl):
+	for i, t in enumerate(playlist.tracks):
 		_t = {
 			'url': t.url,
 			'artist': t.artist if t.artist != None else "",
@@ -113,20 +122,21 @@ def savePlaylist(pl, path):
 			'length': t.length if t.length != None else 0,
 			'curLength': t.curLength if t.curLength != None else 0,
 			'id': i,
-			'globalId': t.globalId
+			'globalId': t.globalId,
+			"type": int(t.type)
 		}
 		saveList.append(_t)
 
 	
 	outfile = open(path, 'w')
-	json.dump({'pl': saveList}, outfile)
+	json.dump({'name': playlist.name, 'pl': saveList}, outfile)
 
-def loadPlaylist(path):
+def loadPlaylist(path: str) -> Playlist:
 	print(path)
 	try:
 		f = open(path, 'r')
 	except IOError as e:
-		return []
+		return Playlist()
 	else:
 		data = f.read()
 		#print(data)
@@ -148,5 +158,11 @@ def loadPlaylist(path):
 			t.curLength = e.curLength
 			t.id = e.id
 			t.globalId = e.globalId
+			t.type = TrackType(e.type)
 			res.append(t)
-		return res
+
+		playlist = Playlist()
+		playlist.name = jspl.name
+		playlist.tracks = res
+		playlist.size = len(res)
+		return playlist

@@ -3,9 +3,10 @@ parentPath = os.path.abspath("../../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 
-from asciimatics.event import KeyboardEvent
+from asciimatics.event import KeyboardEvent, MouseEvent
 from asciimatics.widgets import *
 from asciimatics.scene import Scene
+from asciimatics.effects import Effect
 from asciimatics.screen import Screen
 from asciimatics.renderers import StaticRenderer
 from abc import ABCMeta, abstractmethod, abstractproperty
@@ -20,6 +21,10 @@ from gui.utils.utils import getColor, getAttr, ColorTheme, split_text
 import datetime
 from player import (MOD_ONE_SONG,MOD_SONG_CIRCLE,MOD_ONE_PLAYLIST,
 	MOD_PLAYLIST_CIRCLE,MOD_PLAYLIST_RANDOM)
+from six import with_metaclass
+import re
+from wcwidth import wcswidth
+import itertools
 
 class CustomLabel(Widget):
 	def __init__(self, height=1, align="<", divider=' '):
@@ -240,7 +245,7 @@ class _BaseListBox(with_metaclass(ABCMeta, Widget)):
 			elif event.key_code > 0:
 				# Treat any other normal press as a search
 				now = datetime.datetime.now()
-				if now - self._last_search >= timedelta(seconds=1):
+				if now - self._last_search >= datetime.timedelta(seconds=1):
 					self._search = ""
 				self._search += chr(event.key_code)
 				self._last_search = now
@@ -343,9 +348,9 @@ def _enforce_width(text, width, unicode_aware=True):
 	size = 0
 	if unicode_aware:
 		for i, c in enumerate(text):
-			if size + wcwidth(c) > width:
+			if size + wcswidth(c) > width:
 				return text[0:i]
-			size += wcwidth(c)
+			size += wcswidth(c)
 	elif len(text) + 1 > width:
 		return text[0:width]
 	return text
@@ -443,7 +448,7 @@ class CustomMultiColumnListBox(_BaseListBox):
 				
 				row_dx = 0
 				ii = 0
-				for text, width, align, space in zip_longest(
+				for text, width, align, space in itertools.zip_longest(
 						row, self._columns, self._align, self._spacing, fillvalue=""):
 					if i == self._line:
 						colour = self._chColors[ii].color
@@ -553,7 +558,7 @@ class CustomMainPlaylistBox(CustomMultiColumnListBox):
 				
 				row_dx = 0
 				ii = 0
-				for text, width, align, space in zip_longest(
+				for text, width, align, space in itertools.zip_longest(
 						row, self._columns, self._align, self._spacing, fillvalue=""):
 					if i == self._line:
 						colour = self._chColors[ii].color
@@ -612,7 +617,14 @@ class CustomMainPlaylistBox(CustomMultiColumnListBox):
 				res.append(str(e.get(d)))
 			resList.append((res, e.get('id')))
 		self._options = resList
-	
+
+def readable_mem(mem):
+    for suffix in ["", "K", "M", "G", "T"]:
+        if mem < 10000:
+            return "{}{}".format(int(mem), suffix)
+        mem /= 1024
+    return "{}P".format(int(mem))
+
 class CustomFileBrowser(CustomMultiColumnListBox):
 	def __init__(self, height, root, config, 
 		name=None, on_select=None, on_change=None, formats=[], onlyDir=False):
@@ -708,18 +720,46 @@ class CustomFileBrowser(CustomMultiColumnListBox):
 		return self._root
 	
 class CustomFrame(Frame):
-	def __init__(self, screen, height, width, has_border, name, bg=0):
+	def __init__(self, screen, height, width, has_border, name, upBar, downBar, bg=0):
 		self.bgColor = bg
 		self.frameName = name
+		self.upBar = upBar
+		self.downBar = downBar
+		self.dup = len(self.upBar.layouts)
+		self.ddown = len(self.downBar.layouts)
+		self.presenter = None
+
 		super(CustomFrame, self).__init__(
 			screen, height, width, has_border=has_border, name=name)
+
 	@property
 	def frame_update_count(self):
 		return 1
+
 	def _clear(self):
 		for y in range(self._canvas._buffer_height):
-			self._canvas.print_at(
-				" " * self._canvas.width, 0, y, 0, 0, self.bgColor)
+			self._canvas.print_at(" " * self._canvas.width, 0, y, 0, 0, self.bgColor)
+
+	def addUpBar(self):
+		i = 0
+		for l in self.upBar.layouts:
+			_l = Layout([l[0],l[1],l[2]])
+			self.add_layout(_l)
+			_l.add_widget(self.upBar.lables[i], 0)
+			_l.add_widget(self.upBar.lables[i+1], 1)
+			_l.add_widget(self.upBar.lables[i+2], 2)
+			i+=3
+
+	def addDownBar(self):
+		i = 0
+		for l in self.downBar.layouts:
+			_l = Layout([l[0],l[1],l[2]])
+			self.add_layout(_l)
+			_l.add_widget(self.downBar.lables[i], 0)
+			_l.add_widget(self.downBar.lables[i+1], 1)
+			_l.add_widget(self.downBar.lables[i+2], 2)
+			i+=3
+
 	def swichWindow(self, presenter, event):
 		from asciimatics.exceptions import NextScene
 		if event.key_code in [ord('1')]:
@@ -771,6 +811,7 @@ class VisualParam(Enum):
 	GIPOTROHOIDA = 13
 	SQUARE = 14
 	TEST = -1
+
 strToVisualParam = {
 	'wave': VisualParam.WAVE,
 	'spectrum': VisualParam.SPECTRUM,
@@ -787,7 +828,7 @@ strToVisualParam = {
 	'gipotrohoida': VisualParam.GIPOTROHOIDA,
 	'square': VisualParam.SQUARE,
 }
-	
+
 class CustomVisualizer(Effect):
 	def __init__(self, screen, config, upBarSize, downBarSize, color,
 		bg=0, **kwargs):
@@ -2645,7 +2686,7 @@ def _find_min_start(text, max_width):
 	display_end = wcswidth(text)
 	while display_end > max_width:
 		result += 1
-		display_end -= wcwidth(text[0])
+		display_end -= wcswidth(text[0])
 		text = text[1:]
 	return result
 def _get_offset(text, visible_width):
@@ -2655,7 +2696,7 @@ def _get_offset(text, visible_width):
 		if visible_width - width <= 0:
 			break
 		result += 1
-		width += wcwidth(c)
+		width += wcswidth(c)
 	if visible_width - width < 0:
 		result -= 1
 	return result

@@ -9,6 +9,8 @@ from tag_controller import getTagFromPath
 from gui.dialog import ADD_END
 from gui.utils.utils import ColorTheme, getColor, getAttr, ADD_END, ADD_BEGIN, ADD_AFTER, ADD_BEFORE
 from gui.utils.widget import CustomText
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 class DownloadDialog(Frame):
 

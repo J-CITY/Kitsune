@@ -1,37 +1,58 @@
 import threading, time, os
-from tag_controller import Tag, getTagFromPath
+from tag_controller import Tag, Playlist, getTagFromPath, setTagForPath
 from gui.utils.utils import savePlaylist, loadPlaylist
 from gui.utils.utils import ADD_END, ADD_BEGIN, ADD_AFTER, ADD_BEFORE
-from asciimatics.widgets import KeyboardEvent
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from db import *
 
 from gui.utils.utils import createNotify
+from gui.utils.widget import CustomFrame
 
 import threading
+from enum import Enum
+from typing import NoReturn, Dict, Optional
+
+PLAYLIST_CURRENT = 'current'
+
+class EFrame(Enum):
+    MAIN_PLAYLIST = 1
 
 class Presenter:
 	def __init__(self, config):
 		self.config = config
+		self.frames = {}
+
 		self.song = None
 
-	def worker(self, artist, album, song):
+		self.playlistsCash: Dict[str, Playlist] = {}
+	
+	def tryGetPlaylist(self, name: str) -> Optional[Playlist]:
+		if name in self.playlistsCash:
+			return self.playlistsCash[name]
+		return None
+
+	def worker(self, artist: str, album: str, song: str) -> NoReturn:
 		res = self.lastfmSaveAlbum(artist, album)
 		path = self.config.cash_folder + ("/album.png" if res else "/defAlbum.png")
 		createNotify(artist, album + " - " + song, path, self.config.notify_wait)
 
-	def createNotify(self, title="", msg="", ico=""):
+	def createNotify(self, title: str="", msg: str="", ico: str="") -> NoReturn:
 		createNotify(title, msg, ico, self.config.notify_wait)
 
-	def createNotifySong(self, artist="", album="",  song=""):
+	def createNotifySong(self, artist: str="", album: str="",  song: str=""):
 		if artist=="" or album=="" or  song=="":
 			createNotify(artist, album + " - " + song, self.config.cash_folder + "/defAlbum.png", self.config.notify_wait)
 			return
 		t = threading.Thread(target=self.worker, args=(artist, album, song, ))
 		t.start()
 
-	def setPlayer(self, player):
+	def setPlayer(self, player) -> NoReturn:
 		self.player = player
+
+	def addFrame(self, id: EFrame, frame: CustomFrame) -> NoReturn:
+		self.frames[id] = frame
 		
 	def setMainPlaylist(self, w):
 		self.mainplaylist = w
@@ -65,6 +86,26 @@ class Presenter:
 		self.lyricsWiki = w
 	def setSearch(self, w):
 		self.search = w
+	def setYandexMusicClient(self, c):
+		self.yandexMusicClient = c
+
+	def getYandexMusicFavorites(self):
+		return self.yandexMusicClient.getFavorite()
+
+	def getYandexMusicPlaylists(self):
+		return self.yandexMusicClient.getPlaylists()
+	
+	def getYandexMusicPlaylist(self, name):
+		return self.yandexMusicClient.getPlaylist(name)
+
+	def getYandexMusicTrack(self, id):
+		return self.yandexMusicClient.getTrack(id)
+	
+	def getYandexMusicGetTracks(self, ids):
+		return self.yandexMusicClient.getTracks(ids)
+	
+	def getYandexMusicTrackUrl(self, id):
+		return self.yandexMusicClient.getTrackUrl(id)
 
 	def lyricsGetSongLyrics(self, artist, song):
 		if artist == "" or song == "":
@@ -72,6 +113,12 @@ class Presenter:
 		if not self.config.useInternet:
 			return ""
 		return self.lyricsWiki.getLyrics(artist, song)
+
+	def isSoundCloudInit(self) -> bool:
+		return self.soundCloud.isInitial()
+	
+	def isYandexMusicInit(self) -> bool:
+		return self.yandexMusicClient.isInitial()
 
 	def lastfmGetArtistBio(self, name):
 		if not self.config.useInternet:
@@ -119,10 +166,10 @@ class Presenter:
 		return self.player.getTag()
 
 	def playerPlayById(self, id):
-		if len(self.player.playlist) > id:
-			tag = self.player.playlist[id]
+		if len(self.player.playlist.tracks) > id:
+			tag = self.player.playlist.tracks[id]
 			tag.length = self.player.getLen()
-			if tag.globalId != -1:
+			if tag.globalId != -1 and tag.type != TrackType.YANDEX_MUSIC: #TODO: move to play()
 				if not self.config.useInternet:
 					return
 				s = self.soundCloud.getSongUrlById(tag.globalId)
@@ -136,37 +183,38 @@ class Presenter:
 		tag = getTagFromPath(song)
 		tag.length = self.player.getLen()
 		self.song = tag
-		self.player.playlist = [tag]
+		self.player.playlist.tracks = [tag]
 		self.player.play()
 	def playerSwap(self, _from, _to):
 		if _from == _to:
 			return
-		ida = self.player.playlist[_from].id
-		idb = self.player.playlist[_to].id
-		itm = self.player.playlist[_from]
-		self.player.playlist[_from] = self.player.playlist[_to]
-		self.player.playlist[_to] = itm
-		self.player.playlist[_from].id = ida
-		self.player.playlist[_to].id = idb
-		self.mainplaylist.table.updateList(self.player.playlist)
+		ida = self.player.playlist.tracks[_from].id
+		idb = self.player.playlist.tracks[_to].id
+		itm = self.player.playlist.tracks[_from]
+		self.player.playlist.tracks[_from] = self.player.playlist.tracks[_to]
+		self.player.playlist.tracks[_to] = itm
+		self.player.playlist.tracks[_from].id = ida
+		self.player.playlist.tracks[_to].id = idb
+		self.mainplaylist.table.updateList(self.player.playlist.tracks)
+
 	def playerDelete(self, id):
-		self.player.playlist = self.player.playlist[0:id]+self.player.playlist[id+1:]
-		for i in self.player.playlist[id:]:
+		self.player.playlist.tracks = self.player.playlist.tracks[0:id]+self.player.playlist.tracks[id+1:]
+		for i in self.player.playlist.tracks[id:]:
 			i.id-=1
-		self.mainplaylist.table.updateList(self.player.playlist)
+		self.mainplaylist.table.updateList(self.player.playlist.tracks)
 	
 	def playlistAddPlaylist(self, pos, isPlay, name):
 		spl = self.playlists.curPlaylist
 		#if name == "current" and (pos == ADD_BEFORE or pos == ADD_AFTER):
 		#	pos = ADD_END
 		if pos == ADD_END or pos == ADD_BEFORE:
-			for e in spl:
+			for e in spl.tracks:
 				self.mainPlaylistAddSong(pos, isPlay, name, e)
 				isPlay = False
 		else:
 			lenpl = len(spl)
 			_isPlay = False
-			for e in reversed(spl):
+			for e in reversed(spl.tracks):
 				lenpl-=1
 				if lenpl == 0:
 					_isPlay = isPlay
@@ -175,13 +223,13 @@ class Presenter:
 	def medialibAddAlbum(self, pos, isPlay, name):
 		spl = self.medialibGetCurrentAlbum()
 		if pos == ADD_END or pos == ADD_BEFORE:
-			for e in spl:
+			for e in spl.tracks :
 				self.mainPlaylistAddSong(pos, isPlay, name, e)
 				isPlay = False
 		else:
 			lenpl = len(spl)
 			_isPlay = False
-			for e in reversed(spl):
+			for e in reversed(spl.tracks):
 				lenpl-=1
 				if lenpl == 0:
 					_isPlay = isPlay
@@ -191,11 +239,11 @@ class Presenter:
 		self.medialib.updateMl()
 
 	def playlistAddSong(self, pos, isPlay, name):
-		e = self.playlists.curPlaylist[self.playlists.listPl._line]
+		e = self.playlists.curPlaylist.tracks[self.playlists.listPl._line]
 		self.mainPlaylistAddSong(pos, isPlay, name, e)
 
 	def mainPlaylistUpdateList(self):
-		self.mainplaylist.table.updateList(self.player.playlist)
+		self.mainplaylist.table.updateList(self.player.playlist.tracks)
 	
 	def mainPlaylistOpen(self, pl):
 		for i, p in enumerate(pl):
@@ -226,7 +274,7 @@ class Presenter:
 	def medialibGetCurrentTag(self):
 		return self.medialib.getCurrentTag()
 
-	def mainPlaylistAddSong(self, addParam, needPlay, playlistName, _tag=None):
+	def mainPlaylistAddSong(self, addParam, needPlay: bool, playlistName: str, _tag=None):
 		if _tag == None:
 			song = self.browser.browser.value
 			tag = getTagFromPath(song)
@@ -241,7 +289,7 @@ class Presenter:
 			self.mainplaylist.table._line = 0
 
 		#fun
-		if playlistName == "current":
+		if playlistName == PLAYLIST_CURRENT:
 			playlist = self.player.playlist
 		else:
 			path = self.config.playlist_folder + "/"+ \
@@ -250,39 +298,39 @@ class Presenter:
 
 		#Fun
 		if addParam == ADD_END:
-			tag.id = len(playlist)
-			playlist.append(tag)
+			tag.id = len(playlist.tracks)
+			playlist.tracks.append(tag)
 		elif addParam == ADD_BEGIN:
 			tag.id = 0
-			playlist = [tag] + playlist
-			for e in playlist[1:]:
+			playlist.tracks = [tag] + playlist.tracks
+			for e in playlist.tracks[1:]:
 				e.id+=1
 		elif addParam == ADD_AFTER:
-			tag.id = self.mainplaylist.getId()+1 if playlistName == "current" else 0
-			if tag.id == len(playlist):
-				playlist= playlist[0:tag.id]+[tag]
+			tag.id = self.mainplaylist.getCurrentLineId()+1 if playlistName == PLAYLIST_CURRENT else 0
+			if tag.id == len(playlist.tracks):
+				playlist.tracks = playlist.tracks[0:tag.id]+[tag]
 			else:
-				playlist = playlist[0:tag.id]+[tag]+playlist[tag.id:]
-			for e in playlist[tag.id+1:]:
+				playlist.tracks = playlist.tracks[0:tag.id]+[tag]+playlist.tracks[tag.id:]
+			for e in playlist.tracks[tag.id+1:]:
 				e.id+=1
 		elif addParam == ADD_BEFORE:#befor
-			tag.id = self.mainplaylist.getId() if playlistName == "current" else 0
+			tag.id = self.mainplaylist.getCurrentLineId() if playlistName == PLAYLIST_CURRENT else 0
 			if tag.id == 0:
-				playlist = [tag]+playlist[tag.id:]
+				playlist.tracks = [tag]+playlist.tracks[tag.id:]
 			else:
-				playlist = playlist[0:tag.id]+ [tag]+playlist[tag.id:]
-			for e in playlist[tag.id+1:]:
+				playlist.tracks = playlist.tracks[0:tag.id]+ [tag]+playlist.tracks[tag.id:]
+			for e in playlist.tracks[tag.id+1:]:
 				e.id+=1
 		#fun
-		if playlistName == "current":
-			self.player.playlist = playlist
+		if playlistName == PLAYLIST_CURRENT:
+			self.player.playlist.tracks = playlist.tracks
 			self.song = tag
-			self.mainplaylist.table.updateList(playlist)
+			self.mainplaylist.table.updateList(playlist.tracks)
 			if needPlay:
 				self.mainPlaylistSetPlayId(tag.id)
 				self.player.play()
 		else:
-			savePlaylist(playlist, path)
+			savePlaylist(playlist.tracks, path)
 			self.playlistsUpdatePlaylists()
 		
 	def createNewPlaylistAndSaveSong(self, playlistName):
@@ -393,7 +441,7 @@ class Presenter:
 	def medialibGetCurrentAlbum(self):
 		return self.medialib.getCurrentAlbum()
 
-	def getListOfPlaylists(self):
+	def getListOfPlaylists(self) -> List[str]:
 		arr = os.listdir(self.config.playlist_folder)
 		return arr
 
@@ -405,7 +453,7 @@ class Presenter:
 
 	def mainPlaylistUpdatePlayItem(self):
 		self.mainPlaylistSetPlayId(self.player.playlistId)
-		tag = self.player.playlist[self.player.playlistId]
+		tag = self.player.playlist.tracks[self.player.playlistId]
 		tag.length = self.player.getLen()
 		self.song = tag
 
@@ -494,6 +542,8 @@ class Presenter:
 		return self.upBar.getFrameName()
 
 	def artistinfoUpdateText(self):
+		if not self.config.useInternet:
+			return ''
 		self.artistinfo.updateText()
 
 	def lyricsUpdateText(self):
@@ -505,3 +555,8 @@ class Presenter:
 		return self.player.getLen()
 	def playerGetBuf(self):
 		return self.player.getBuf()
+	
+	def saveSongsMetadatas(self, path, tag):
+		setTagForPath(path, tag)
+
+	

@@ -3,6 +3,8 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 from asciimatics.widgets import *
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from gui.utils.widget import CustomFrame, CustomMultiColumnListBox, CustomText
 from gui.utils.utils import getAttr, ColorTheme, getColor
@@ -19,21 +21,11 @@ from gui.dialog_info import InfoDialog
 class SearchFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(SearchFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Search", bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name="Search", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
 		self.curDbPlaylist = []
 		self.curScPlaylist = []
 
-		self.upBar = upBar
-		self.downBar = downBar
-
-		i = 0
-		for l in upBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(upBar.lables[i], 0)
-			_l.add_widget(upBar.lables[i+1], 1)
-			_l.add_widget(upBar.lables[i+2], 2)
-			i+=3
+		self.addUpBar()
 		
 		textLayout = Layout([90, 10], fill_frame=False)
 		self.add_layout(textLayout)
@@ -83,16 +75,7 @@ class SearchFrame(CustomFrame):
 		self.listSearchSc.itemCh = config.search.item_char
 		layout.add_widget(self.listSearchSc, 1)
 
-
-		i = 0
-		for l in downBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(downBar.lables[i], 0)
-			_l.add_widget(downBar.lables[i+1], 1)
-			_l.add_widget(downBar.lables[i+2], 2)
-			i+=3
-		
+		self.addDownBar()
 		self.fix()
 
 	def getCurTag(self):
@@ -104,6 +87,7 @@ class SearchFrame(CustomFrame):
 			if len(self.curScPlaylist) > 0:
 				e = self.curScPlaylist[self.listSearchSc._line]
 		return e
+
 	def process_event(self, event):
 		# Do the key handling for this Frame.
 		if isinstance(event, KeyboardEvent):
@@ -223,7 +207,7 @@ class SearchFrame(CustomFrame):
 		self.listSearchDb.value = 0
 
 		#search sc
-		if self.presenter.useInternet:
+		if self.presenter.config.useInternet:
 			res = self.presenter.scSearch(searchText)
 			res = self.presenter.scSearch(searchText)
 			self.curScPlaylist = []

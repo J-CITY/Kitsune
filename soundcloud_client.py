@@ -2,13 +2,20 @@ import soundcloud
 import urllib.request
 
 class SoundcloudClient:
-	def __init__(self, _clientId, _clientSecret, _username, _password, _bpm=0, _pages=2):
+	isInit = False
+	def __init__(self, _clientId=None, _clientSecret=None, _username=None, _password=None, _bpm=0, _pages=2):
+		if _clientId is None:
+			return
 		self.client = soundcloud.Client(client_id=_clientId,
 			client_secret=_clientSecret,
 			username=_username,
 			password=_password)
 		self.bpm = _bpm
 		self.pages = _pages
+		self.isInit = True
+
+	def isInitial(self) -> bool:
+		return self.isInit
 
 	def getFavorites(self):
 		return self.client.get('/me/favorites')
@@ -36,22 +43,16 @@ class SoundcloudClient:
 		return self.client.get('/playlists/'+str(id))
 
 	def setID3Tag(self, path, fname):
+		from tag_controller import Tag
 		data = fname.split(" - ")
 		if len(data) < 2:
 			return
-		from mutagen.mp3 import MP3
-		from mutagen.id3 import ID3NoHeaderError
-		from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC
-		try: 
-			tags = ID3(path)
-		except ID3NoHeaderError:
-			tags = ID3()
 		artist = data[0].strip()
 		song = data[1].strip()
-		tags["TIT2"] = TIT2(encoding=3, text=song)
-		#tags["TALB"] = TALB(encoding=3, text=u'Без паники')
-		tags["TPE1"] = TPE1(encoding=3, text=artist)
-		tags.save(path)
+		tag = Tag()
+		tag.artist = artist
+		tag.song = song
+		self.presenter.saveSongsMetadatas(path, tag)
 
 	def like(self, id):
 		self.client.put('/me/favorites/%d' % id)

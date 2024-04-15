@@ -31,6 +31,7 @@ from lastfm_client import *
 from lyricsWiki import *
 
 from soundcloud_client import SoundcloudClient
+from yandexMusicClient import YandexMusicClient
 
 from db import *
 
@@ -48,18 +49,27 @@ pathlib.Path(config.playlist_folder).mkdir(parents=True, exist_ok=True)
 if config.useInternet:
 	canConnectToSC = True
 	try:
-		sc = SoundcloudClient(
-			config.sound_cloud.client_id,
-			config.sound_cloud.client_secret,
-			config.sound_cloud.username,
-			config.sound_cloud.password,
-			config.sound_cloud.bpm,
-			config.sound_cloud.search_pages)
+		if (config.sound_cloud.client_id != ''):
+			sc = SoundcloudClient(
+				config.sound_cloud.client_id,
+				config.sound_cloud.client_secret,
+				config.sound_cloud.username,
+				config.sound_cloud.password,
+				config.sound_cloud.bpm,
+				config.sound_cloud.search_pages)
+		else:
+			sc = SoundcloudClient()
 	except:
 		canConnectToSC = False
 if config.useInternet:
-	lastfm = Lastfm(config.lastfm.apikey, config.lastfm.lang)
-	lyricsWiki = LyricsWiki()
+	if (config.lastfm.apikey != ''):
+		lastfm = Lastfm(config.lastfm.apikey, config.lastfm.lang)
+	else:
+		lastfm = Lastfm()
+	if (config.lirycsApi.apikey != ''):
+		lyricsWiki = LyricsWiki(config.lirycsApi.apikey)
+	else:
+		lyricsWiki = LyricsWiki()
 
 
 upBar = Bar()
@@ -77,6 +87,14 @@ if config.useInternet:
 	presenter.setLastfm(lastfm)
 	presenter.setLyricsWiki(lyricsWiki)
 	lastfm.setPresenter(presenter)
+
+if config.useInternet:
+	if (config.yandex_music.token != ''):
+		yandexMusicClient = YandexMusicClient(config.yandex_music.token)
+	else:
+		yandexMusicClient = YandexMusicClient()
+	yandexMusicClient.setPresenter(presenter)
+	presenter.setYandexMusicClient(yandexMusicClient)
 
 db = Database()
 db.PATH = config.root_dir

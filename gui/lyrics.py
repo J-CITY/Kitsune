@@ -3,6 +3,8 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 from asciimatics.widgets import *
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
@@ -14,41 +16,25 @@ from gui.utils.utils import getColor, getAttr, ColorTheme
 from gui.utils.widget import CustomFrame, TextView
 from asciimatics.renderers import Rainbow
 from gui.dialog_info import InfoDialog
+import asyncio
+from typing import NoReturn
 
 class LyricsFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(LyricsFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Lyrics", bg=getColor(config.bg_color))
-		self.upBar = upBar
-		self.downBar = downBar
+			screen, screen.height, screen.width, has_border=False, name="Lyrics", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
 		self.dup = 0
 		self.ddown = 0
 		self.artist = ""
 		self.song = ""
+		
+		self.addUpBar()
 
-		dh = 0
-		i = 0
-		for l in upBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(upBar.lables[i], 0)
-			_l.add_widget(upBar.lables[i+1], 1)
-			_l.add_widget(upBar.lables[i+2], 2)
-			i+=3
-			dh+=1
-			self.dup += 1
 		layout = Layout([1], fill_frame=True)
 		self.add_layout(layout)
-		i = 0
-		for l in downBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(downBar.lables[i], 0)
-			_l.add_widget(downBar.lables[i+1], 1)
-			_l.add_widget(downBar.lables[i+2], 2)
-			i+=3
-			dh+=1
-			self.ddown += 1
+		
+		self.addDownBar()
+
 		c = config.lyrics.color.split(':')
 		tcolor = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
 		self.text = TextView(self.screen.height-self.dup-self.ddown, tcolor, name="lyrics")
@@ -74,6 +60,13 @@ class LyricsFrame(CustomFrame):
 	def setPresenter(self, p):
 		self.presenter = p
 
+	async def updateTextAsync(self, artist: str, song: str) -> NoReturn:
+		text = self.presenter.lyricsGetSongLyrics(artist, song)
+		if (self.artist == artist and self.song == song):
+			self.text.setText(text)
+		else:
+			asyncio.run(self.updateTextAsync(self.artist, self.song))
+
 	def updateText(self):
 		if self.presenter != None and \
 			(self.artist != self.presenter.playerGetCurTag().artist\
@@ -82,5 +75,4 @@ class LyricsFrame(CustomFrame):
 			self.artist = self.presenter.playerGetCurTag().artist
 			self.song = self.presenter.playerGetCurTag().song
 
-			text = self.presenter.lyricsGetSongLyrics(self.artist, self.song)
-			self.text.setText(text)
+			asyncio.run(self.updateTextAsync(self.artist, self.song))

@@ -1,11 +1,22 @@
-from PyLyrics import *
-
+import lyricsgenius
 class LyricsWiki:
-	def __init__(self):
-		pass
+	isInit = False
+	def __init__(self, apikey=None):
+		if apikey is None:
+			return
+		self.genius = lyricsgenius.Genius(apikey)
+		self.isInit = True
 
-	def getLyrics(self, artist, song):
+	def isInitial(self) -> bool:
+		return self.isInit
+
+	def getLyrics(self, artist: str, song: str):
+		artist = self.genius.search_artist(artist, max_songs=3)
+		song = artist.song(song)
+		return song.lyrics
 		try:
-			return PyLyrics.getLyrics(artist, song)
+			artist = self.genius.search_artist(artist)
+			song = artist.song(song)
+			return song.lyrics
 		except:
 			return ""

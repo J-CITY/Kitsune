@@ -59,7 +59,7 @@ if sys.hexversion < 0x02060000:
 	ctypes.c_bool = ctypes.c_byte
 
 if platform.system().lower() == 'windows':
-	bass_module = ctypes.WinDLL('bass')
+	bass_module = ctypes.WinDLL('./bass.dll')
 	func_type = ctypes.WINFUNCTYPE
 else:
 	# correct by Wasylews (sabov.97@mail.ru), thank him

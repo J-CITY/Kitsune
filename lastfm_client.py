@@ -6,10 +6,17 @@ import os
 #	from PIL import Image
 
 class Lastfm:
-	def __init__(self, apikey, lang='en'):
+	isInit = False
+	def __init__(self, apikey = None, lang='en'):
+		if apikey is None:
+			return
 		self.lang = lang
 		self.network = pylast.LastFMNetwork(api_key=apikey)
+		self.isInit = True
 
+	def isInitial(self) -> bool:
+		return self.isInit
+	
 	def setPresenter(self, p):
 		self.presenter = p
 

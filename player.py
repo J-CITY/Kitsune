@@ -4,6 +4,7 @@ import sys, time
 from gui.utils.utils import loadPlaylist
 from random import randint
 from tag_controller import *
+from multiprocessing import Process
 
 MOD_ONE_SONG = 0
 MOD_SONG_CIRCLE = 1
@@ -94,8 +95,8 @@ class Player:
 		self.param = config.visualization
 
 	def getTag(self):
-		if (len(self.playlist) > self.playlistId):
-			return self.playlist[self.playlistId]
+		if (len(self.playlist.tracks) > self.playlistId):
+			return self.playlist.tracks[self.playlistId]
 		else:
 			return Tag()
 
@@ -104,20 +105,31 @@ class Player:
 			BASS_StreamFree(s)
 		BASS_Free()
 
+	def playOnline(self):
+		trackUrl = self.presenter.getYandexMusicTrackUrl(self.playlist.tracks[self.playlistId].globalId)
+		#print(trackUrl)
+		if trackUrl is not None:
+			fxch = BASS_StreamCreateURL(trackUrl.encode("utf-8"), False, BASS_STREAM_DECODE,DOWNLOADPROC(),0)
+			self.streams[self.streamsId] = BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
+
 	def play(self):
 		self.isPlay = True
 		#BASS_ChannelStop(self.streams[self.streamsId])
 		
 		self.streamsId = (self.streamsId+1)%2
 		_url = ''
-		if len(self.playlist) > self.playlistId:
-			_url = self.playlist[self.playlistId].url
+		if len(self.playlist.tracks) > self.playlistId:
+			track = self.playlist.tracks[self.playlistId]
+			_url = track.url
 
 		#BASS_ChannelStop(self.streams[self.streamsId])
 		#BASS_StreamFree
+		#TODO: in SC get url here
 		if _url[:4] == 'http' or _url[:3] == 'ftp':
 			fxch = BASS_StreamCreateURL(_url.encode("utf-8"), False, BASS_STREAM_DECODE,DOWNLOADPROC(),0)
 			self.streams[self.streamsId] = BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
+		elif track.type == TrackType.YANDEX_MUSIC:
+			self.playOnline()
 		else:
 			fxch = BASS_StreamCreateFile(False, _url, 0, 0, BASS_UNICODE|BASS_STREAM_DECODE)
 			self.streams[self.streamsId] = BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
@@ -126,8 +138,8 @@ class Player:
 		
 		self.setEqParams()
 
-		self.presenter.createNotifySong(self.playlist[self.playlistId].artist, 
-			self.playlist[self.playlistId].album, self.playlist[self.playlistId].song)
+		self.presenter.createNotifySong(self.playlist.tracks[self.playlistId].artist, 
+			self.playlist.tracks[self.playlistId].album, self.playlist.tracks[self.playlistId].song)
 
 	def stop(self):
 		self.isPlay = False
@@ -136,7 +148,7 @@ class Player:
 
 	def next(self):
 		self.isPlay = True
-		if (self.playlistId < len(self.playlist)-1):
+		if (self.playlistId < len(self.playlist.tracks)-1):
 			self.playlistId += 1
 			self.play()
 
@@ -166,7 +178,7 @@ class Player:
 		else:
 			if self.streams[self.streamsId] == 0:
 				self.presenter.mainPlaylistSetPlayId(0)
-				tag = self.playlist[0]
+				tag = self.playlist.tracks[0]
 				tag.length = self.getLen()
 				self.presenter.song = tag
 				self.play()
@@ -208,7 +220,7 @@ class Player:
 
 	def setPresenter(self, p):
 		self.presenter = p
-		if self.playlist != []:
+		if self.playlist.tracks != []:
 			self.presenter.mainPlaylistUpdateList()
 
 	def update(self):
@@ -227,7 +239,7 @@ class Player:
 				_slen = BASS_ChannelBytes2Seconds(self.streams[self.streamsId], _len)
 				_sbuf = BASS_ChannelBytes2Seconds(self.streams[self.streamsId], _buf)
 				if _slen - _sbuf <= canPlay:
-					lenPl = len(self.playlist)
+					lenPl = len(self.playlist.tracks)
 					if self.mode == MOD_PLAYLIST_CIRCLE and lenPl > 0:
 						self.playlistId += 1
 						if self.playlistId >= lenPl:

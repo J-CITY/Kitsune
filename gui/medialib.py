@@ -3,6 +3,8 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 from asciimatics.widgets import *
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from gui.utils.widget import CustomFrame, CustomMultiColumnListBox
 from gui.utils.utils import getAttr, ColorTheme, getColor
@@ -13,25 +15,15 @@ from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 from gui.dialog import AddMusicDialog
 from gui.dialog import AddMusicDialog, ADD_END,ADD_BEGIN,ADD_AFTER,ADD_BEFORE
 from strings import CURRENT_PLAYLIST
-from gui.dialog_info import InfoDialog
+from gui.dialog_info import InfoDialog, TagEditorDialog
 
 class MedialibFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(MedialibFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Medialib", bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name="Medialib", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
 		self.curPlaylist = []
 
-		self.upBar = upBar
-		self.downBar = downBar
-
-		i = 0
-		for l in upBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(upBar.lables[i], 0)
-			_l.add_widget(upBar.lables[i+1], 1)
-			_l.add_widget(upBar.lables[i+2], 2)
-			i+=3
+		self.addUpBar()
 		
 		layout = Layout([1,1,1], fill_frame=True)
 		self.add_layout(layout)
@@ -82,14 +74,7 @@ class MedialibFrame(CustomFrame):
 		self.listSongs.itemCh = config.main_playlist.item_char
 		layout.add_widget(self.listSongs, 2)
 
-		i = 0
-		for l in downBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(downBar.lables[i], 0)
-			_l.add_widget(downBar.lables[i+1], 1)
-			_l.add_widget(downBar.lables[i+2], 2)
-			i+=3
+		self.addDownBar()
 		
 		self.fix()
 
@@ -147,6 +132,13 @@ class MedialibFrame(CustomFrame):
 						"Info",
 						["OK"],
 						config=self.presenter.config, win=self.frameName))
+			if event.key_code in [ord("T")]:
+				e = self.curPlaylist[self.listSongs._line]
+				if os.path.isfile(e.url):
+					self._scene.add_effect(
+						TagEditorDialog(self._screen, 
+							e,
+							config=self.presenter.config, win=self.frameName))
 
 		super(MedialibFrame, self).process_event(event)
 		

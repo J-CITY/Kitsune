@@ -3,12 +3,15 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 from asciimatics.widgets import *
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from gui.utils.widget import CustomFileBrowser
-from tag_controller import getTagFromPath
 from gui.dialog import ADD_END
 from gui.utils.utils import ColorTheme, getColor, getAttr
 from gui.utils.widget import CustomText, TextView
+from functools import partial
+from tag_controller import Tag, getTagFromPath, setTagForPath
 
 CONTROL_INFO = """
 <q> <Q> - quit
@@ -168,3 +171,59 @@ class InfoDialog(Frame):
 		text = CONTROL_INFO + PLAYER_CONTROL_INFO
 		text += self.textInfo[self.win]
 		self.text.setText(text)
+
+
+class TagEditorDialog(Frame):
+	def __init__(self, screen, tag, config, has_shadow=False, win=""):
+
+		width = screen.width // 2
+		height = 17
+
+		self.tag = tag
+		self.win = win
+		# Construct the Frame
+		self._data = {"message": "Edit tags"}
+		super(TagEditorDialog, self).__init__(
+			screen, height, width, self._data, has_shadow=has_shadow, is_modal=True)
+
+		# Build up the message box
+		layout = Layout([2], fill_frame=True)
+		self.add_layout(layout)
+		
+		layout.add_widget(Divider())
+
+		c = config.dialog.color.split(':')
+		tcolor = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
+
+		self.titleText = CustomText(tcolor, label="Title:",
+				name="title_text",
+				validator="^[a-zA-Z0-9_]")
+		layout.add_widget(self.titleText)
+
+		self.albumText = CustomText(tcolor, label="Album:",
+				name="album_text",
+				validator="^[a-zA-Z0-9_]")
+		layout.add_widget(self.albumText)
+
+		self.artistText = CustomText(tcolor, label="Artist:",
+				name="artist_text",
+				validator="^[a-zA-Z0-9_]")
+		layout.add_widget(self.artistText)
+
+		
+		layout.add_widget(Divider())
+		
+		layoutBtns = Layout([1, 1])
+		self.add_layout(layoutBtns)
+		for i, button in enumerate(["Ok", "Cancel"]):
+			func = partial(self._destroy, i)
+			layoutBtns.add_widget(Button(button, func), i)
+		self.fix()
+
+	def _destroy(self, selected):
+		if selected == 0 and self.tag.url is not None and os.path.isfile(self.tag.url):
+			self.tag.song = self.titleText.value
+			self.tag.album = self.albumText.value
+			self.tag.artist = self.artistText.value
+			setTagForPath(self.tag.url, self.tag)
+		self._scene.remove_effect(self)

@@ -3,36 +3,37 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 from asciimatics.widgets import *
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from gui.utils.utils import ColorTheme, getAttr, getColor, loadPlaylist, savePlaylist
 from gui.utils.widget import CustomFrame, CustomMultiColumnListBox
 
-from tag_controller import Tag, getTagFromPath
+from tag_controller import Tag, getTagFromPath, Playlist
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
+from asciimatics.event import KeyboardEvent, MouseEvent
+from asciimatics.screen import Screen
 
 from gui.dialog import AddMusicDialog
 from gui.dialog_download import DownloadDialog
 from gui.dialog import AddMusicDialog, ADD_END,ADD_BEGIN,ADD_AFTER,ADD_BEFORE
 from gui.dialog_info import InfoDialog
 from strings import *
+from typing import List, NoReturn
+from tag_controller import TrackType
+
+class PlaylistInfo:
+	def __init__(self, t, n) -> NoReturn:
+		self.type: TrackType = t
+		self.name: str = n
 
 class PlaylistsFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(PlaylistsFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Playlists", bg=getColor(config.bg_color))
-		self.curPlaylist = []
-
-		self.upBar = upBar
-		self.downBar = downBar
-
-		i = 0
-		for l in upBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(upBar.lables[i], 0)
-			_l.add_widget(upBar.lables[i+1], 1)
-			_l.add_widget(upBar.lables[i+2], 2)
-			i+=3
+			screen, screen.height, screen.width, has_border=False, name="Playlists", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+		self.curPlaylist: Playlist = Playlist()
+		self.playlistsInfo: List[PlaylistInfo] = []
+		self.addUpBar()
 		
 		layout = Layout([1,1], fill_frame=True)
 		self.add_layout(layout)
@@ -70,15 +71,8 @@ class PlaylistsFrame(CustomFrame):
 		self.listPl.choiceCh = config.main_playlist.choice_char
 		self.listPl.itemCh = config.main_playlist.item_char
 		layout.add_widget(self.listPl, 1)
-		i = 0
-		for l in downBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(downBar.lables[i], 0)
-			_l.add_widget(downBar.lables[i+1], 1)
-			_l.add_widget(downBar.lables[i+2], 2)
-			i+=3
 		
+		self.addDownBar()
 		self.fix()
 
 	def popup(self):
@@ -94,17 +88,10 @@ class PlaylistsFrame(CustomFrame):
 			self.swichWindow(self.presenter, event)
 			self.presenter.playerEventControl(event)
 			if event.key_code in [ord('e')]:
-				if self.isSCPlaylist:
-					if self.listPls._has_focus:
-						#self.addPlaylist()
-						pass
-					else:
-						self.addSCSong(False)
+				if self.listPls._has_focus:
+					self.addPlaylist()
 				else:
-					if self.listPls._has_focus:
-						self.addPlaylist()
-					else:
-						self.addSong(False)
+					self.addSong(False)
 			if event.key_code in [ord('E')]:
 				name = ""
 				title = ""
@@ -138,7 +125,7 @@ class PlaylistsFrame(CustomFrame):
 				if not self.presenter.config.useInternet:
 					return
 				playlistName = self.listPls._options[self.listPls._line][0][0]
-				e = self.curPlaylist[self.listPl._line]
+				e = self.curPlaylist.tracks[self.listPl._line]
 				url = ""
 				name = ""
 				if playlistName == "SC:favorites":
@@ -161,7 +148,7 @@ class PlaylistsFrame(CustomFrame):
 					return
 				playlistName = self.listPls._options[self.listPls._line][0][0]
 
-				e = self.curPlaylist[self.listPl._line]
+				e = self.curPlaylist.tracks[self.listPl._line]
 				url = ""
 				name = ""
 				if playlistName == "SC:favorites":
@@ -189,9 +176,9 @@ class PlaylistsFrame(CustomFrame):
 				elif self.listPl._has_focus:
 					playlistName = self.listPls._options[self.listPls._line][0][0]
 					if playlistName[:3] != "SC:":
-						self.curPlaylist = self.curPlaylist[:self.listPl._line] + self.curPlaylist[self.listPl._line+1:]
+						self.curPlaylist.tracks = self.curPlaylist.tracks[:self.listPl._line] + self.curPlaylist.tracks[self.listPl._line+1:]
 						_curPlaylist = []
-						for i, e in enumerate(self.curPlaylist):
+						for i, e in enumerate(self.curPlaylist.tracks):
 							_curPlaylist.append(([e.artist+" - "+e.song], i))
 						self.listPl._options = _curPlaylist
 						self.listPl.value = 0
@@ -205,16 +192,16 @@ class PlaylistsFrame(CustomFrame):
 						_from = self.listPl._line
 						_to = self.listPl._line-1 if self.listPl._line > 0 else self.listPl._line
 
-						e = self.curPlaylist[_from]
-						self.curPlaylist[_from] = self.curPlaylist[_to]
+						e = self.curPlaylist.tracks[_from]
+						self.curPlaylist.tracks[_from] = self.curPlaylist.tracks[_to]
 						self.curPlaylist[_to] = e
 
-						e = self.curPlaylist[_from].id
-						self.curPlaylist[_from].id = self.curPlaylist[_to].id
-						self.curPlaylist[_to].id = e
+						e = self.curPlaylist.tracks[_from].id
+						self.curPlaylist.tracks[_from].id = self.curPlaylist.tracks[_to].id
+						self.curPlaylist.tracks[_to].id = e
 
 						_curPlaylist = []
-						for i, e in enumerate(self.curPlaylist):
+						for i, e in enumerate(self.curPlaylist.tracks):
 							_curPlaylist.append(([e.artist+" - "+e.song], i))
 						self.listPl._options = _curPlaylist
 
@@ -229,16 +216,16 @@ class PlaylistsFrame(CustomFrame):
 						_from = self.listPl._line
 						_to = self.listPl._line+1 if self.listPl._line < len(self.listPl._options)-1 else self.listPl._line
 				
-						e = self.curPlaylist[_from]
-						self.curPlaylist[_from] = self.curPlaylist[_to]
-						self.curPlaylist[_to] = e
+						e = self.curPlaylist.tracks[_from]
+						self.curPlaylist.tracks[_from] = self.curPlaylist.tracks[_to]
+						self.curPlaylist.tracks[_to] = e
 
-						e = self.curPlaylist[_from].id
-						self.curPlaylist[_from].id = self.curPlaylist[_to].id
-						self.curPlaylist[_to].id = e
+						e = self.curPlaylist.tracks[_from].id
+						self.curPlaylist.tracks[_from].id = self.curPlaylist.tracks[_to].id
+						self.curPlaylist.tracks[_to].id = e
 						
 						_curPlaylist = []
-						for i, e in enumerate(self.curPlaylist):
+						for i, e in enumerate(self.curPlaylist.tracks):
 							_curPlaylist.append(([e.artist+" - "+e.song], i))
 						self.listPl._options = _curPlaylist
 
@@ -266,97 +253,130 @@ class PlaylistsFrame(CustomFrame):
 		return
 
 	def addPlaylist(self):
-		for e in self.curPlaylist:
+		for e in self.curPlaylist.tracks:
 			self.presenter.mainPlaylistAddSong(ADD_END, False, "current", e)
 	
 	def openPlaylist(self):
 		self.presenter.mainPlaylistOpen(self.curPlaylist)
 
 	def addSong(self, play=True):
-		e = self.curPlaylist[self.listPl._line]
+		e = self.curPlaylist.tracks[self.listPl._line]
+		if e.type == TrackType.SOUND_CLOUD and not self.presenter.isSoundCloudInit():
+			return
+		if e.type == TrackType.YANDEX_MUSIC and not self.presenter.isYandexMusicInit():
+			return
 		if play:
 			self.presenter.player.stop()
 		self.presenter.mainPlaylistAddSong(ADD_END, play, "current", e)
 	
-	def addSCSong(self, play=True):
+	def updatePlaylists(self):
+		self.playlistsInfo = []
+		#get local playlists
+		tableOptions = []
+		localPlaylists = self.presenter.getListOfPlaylists()
+		#print(pls)
+		if localPlaylists != []:
+			for i, e in enumerate(localPlaylists):
+				tableOptions.append(([e], i))
+				self.playlistsInfo.append(PlaylistInfo(TrackType.LOCAL, e))
+
 		if not self.presenter.config.useInternet:
 			return
-		e = self.curPlaylist[self.listPl._line]
-		playlistName = self.listPls._options[self.listPls._line][0][0]
-		if playlistName == "SC:favorites":
-			url = self.presenter.scGetStream(e.stream_url).location
-			title = e.title
-			fileName = e.title
-			year = e.release_year
-			globalId = e.id
-			genre = e.genre
-		else:
-			url = self.presenter.scGetStream(e["stream_url"]).location
-			title = e["title"]
-			fileName = e["title"]
-			year = e["release_year"]
-			globalId = e["id"]
-			genre = e["genre"]
-
-		artist = song = title
-		data = title.split(" - ")
-		if len(data) < 2:
-			pass
-		else:
-			artist = data[0].strip()
-			song = data[1].strip()
-		t = Tag()
-		t.url = url
-		t.artist = artist
-		t.album = ''
-		t.song = song
-		t.fileName = fileName
-		t.year = year
-		t.genre = genre
-		t.coverart = ''
-		t.length = 0
-		t.curLength = 0
-		t.id = -1
-		t.globalId = globalId
-		self.presenter.mainPlaylistAddSong(ADD_END, play, "current", t)
-
-	def updatePlaylists(self):
-		pls = self.presenter.getListOfPlaylists()
-		#print(pls)
-		if pls == []:
-			pass
-		else:
-			self.isSCPlaylist = False
-			playlistName = pls[0]
-			for i, e in enumerate(pls):
-				pls[i] = ([e], i)
-
-		useSC = True
-		if not self.presenter.config.useInternet:
-			useSC = False
-		if useSC:
-			if pls == []:
-				playlistName = "SC:favorites"
-				self.isSCPlaylist = True
-			scList = ["SC:favorites"]
-
+		
+		if self.presenter.isSoundCloudInit():
+			scList = ["SoundCloud: likes"]
 			scpls = self.presenter.scGetPlaylists()
 			for p in scpls:
-				scList += ["SC:"+p.title]
+				scList += [p.title]
 
 			for i, e in enumerate(scList):
-				pls.append(([e], len(pls)))
+				tableOptions.append(([e], len(tableOptions)))
+				self.playlistsInfo.append(PlaylistInfo(TrackType.SOUND_CLOUD, e))
 
-		self.listPls._options = pls
+		if self.presenter.isYandexMusicInit():
+			ymList = ["Yandex Music: likes"]
+			ympls = self.presenter.getYandexMusicPlaylists()
+			for p in ympls:
+				ymList += [p.title]
+
+			for i, e in enumerate(ymList):
+				tableOptions.append(([e], len(tableOptions)))
+				self.playlistsInfo.append(PlaylistInfo(TrackType.YANDEX_MUSIC, e))
+
+		self.listPls._options = tableOptions
 		self.listPls.value = 0
-		if playlistName[:3] == "SC:" and self.presenter.config.useInternet:
-			self.isSCPlaylist = True
+
+		if self.playlistsInfo == []:
+			return
+		currentPlaylist = self.playlistsInfo[0]
+		self.setCurrentPlaylist(currentPlaylist)
+
+	def setCurrentPlaylist(self, currentPlaylist: PlaylistInfo) -> NoReturn:
+		if currentPlaylist.type == TrackType.YANDEX_MUSIC:
 			_curPlaylist = []
-			if playlistName == "SC:favorites":
-				self.scpl = self.presenter.scGetFavorites()
+
+			if currentPlaylist.name == "Yandex Music: likes":
+				ympl = self.presenter.getYandexMusicFavorites()
+
+				tracksId= []
+				for e in ympl:
+					tracksId.append(e.id)
+				tracks = self.presenter.getYandexMusicGetTracks(tracksId)
 				
-				for i, e in enumerate(self.scpl):
+				self.curPlaylist = Playlist()
+				self.curPlaylist.name = "Yandex Music: likes"
+				for i, track in enumerate(tracks):
+					_curPlaylist.append((["-" + track.title], i))
+					t = Tag()
+					t.type = TrackType.YANDEX_MUSIC
+					t.url = str(track.title)
+					t.album = '' if len(track.albums) == 0 else track.albums[0].title
+					t.artist = '' if len(track.artists) == 0 else track.artists[0].name
+					t.song = track.title
+					t.globalId = track.id
+					self.curPlaylist.tracks.append(t)
+				self.listPl._options = _curPlaylist
+				self.listPl.value = 0
+			else:
+				ympl = self.presenter.getYandexMusicPlaylist(currentPlaylist.name)
+
+				tracksId= []
+				for e in ympl:
+					tracksId.append(e.id)
+				tracks = self.presenter.getYandexMusicGetTracks(tracksId)
+
+				self.curPlaylist = Playlist()
+				self.curPlaylist.name = currentPlaylist.name
+				for i, track in enumerate(tracks):
+					_curPlaylist.append((["-" + track.title], i))
+					t = Tag()
+					t.type = TrackType.YANDEX_MUSIC
+					t.url = str(track.title)
+					t.album = '' if len(track.albums) == 0 else track.albums[0].title
+					t.artist = track.artists[0].name
+					t.song = track.title
+					t.globalId = track.id
+					self.curPlaylist.tracks.append(t)
+				self.listPl._options = _curPlaylist
+				self.listPl.value = 0
+			return
+
+		if currentPlaylist.type == TrackType.SOUND_CLOUD:
+			_curPlaylist = []
+			if currentPlaylist.name == "SoundCloud: likes":
+				scpl = self.presenter.scGetFavorites()
+				self.curPlaylist = Playlist()
+				self.curPlaylist.name = "SoundCloud: likes"
+				for i, e in enumerate(scpl):
 					_curPlaylist.append((["-"+e.title], i))
+					t = Tag()
+					t.type = TrackType.SOUND_CLOUD
+					t.url = str(e.title)
+					t.album = ''
+					t.artist = ''
+					t.song = e.title
+					t.globalId = e.id
+					self.curPlaylist.tracks.append(t)
 				self.listPl._options = _curPlaylist
 				self.listPl.value = 0
 				return
@@ -365,24 +385,31 @@ class PlaylistsFrame(CustomFrame):
 				#print(scpls)
 				scid = 0
 				for p in scpls:
-					
-					if p.title == playlistName[3:]:
+					if p.title == currentPlaylist.name:
 						scid = p.ud
 						break
-				self.scpl = self.presenter.scGetPlaylistsById(scid)
-				for i, e in enumerate(self.scpl):
+				scpl = self.presenter.scGetPlaylistsById(scid)
+				self.curPlaylist = Playlist()
+				self.curPlaylist.name = currentPlaylist.name
+				for i, e in enumerate(scpl):
 					_curPlaylist.append((["-"+e.title], i))
+					t = Tag()
+					t.type = TrackType.SOUND_CLOUD
+					t.url = str(e.title)
+					t.album = ''
+					t.artist = ''
+					t.song = e.title
+					t.globalId = e.id
+					self.curPlaylist.tracks.append(t)
 				self.listPl._options = _curPlaylist
 				self.listPl.value = 0
-		if pls == []:
 			return
-
 		
 		path = self.presenter.config.playlist_folder + "/"+ \
-			playlistName if self.presenter.config.playlist_folder[len(self.presenter.config.playlist_folder)-1] != "/" else playlistName
+			currentPlaylist.name if self.presenter.config.playlist_folder[len(self.presenter.config.playlist_folder)-1] != "/" else currentPlaylist.name
 		self.curPlaylist = loadPlaylist(path)
 		_curPlaylist = []
-		for i, e in enumerate(self.curPlaylist):
+		for i, e in enumerate(self.curPlaylist.tracks):
 			_curPlaylist.append(([e.artist+" - "+e.song], i))
 		self.listPl._options = _curPlaylist
 		self.listPl.value = 0
@@ -392,39 +419,5 @@ class PlaylistsFrame(CustomFrame):
 		self.updatePlaylists()
 
 	def _on_change(self):
-		playlistName = self.listPls._options[self.listPls.value][0][0]
-
-		if playlistName[:3] == "SC:" and self.presenter.config.useInternet:
-			self.isSCPlaylist = True
-			_curPlaylist = []
-			if playlistName == "SC:favorites":
-				self.curPlaylist = self.presenter.scGetFavorites()
-				
-				for i, e in enumerate(self.curPlaylist):
-					_curPlaylist.append((["-"+e.title], i))
-				self.listPl._options = _curPlaylist
-				self.listPl.value = 0
-				return
-			else:
-				scpls = self.presenter.scGetPlaylists()
-				scid = 0
-				for p in scpls:
-					if p.title == playlistName[3:]:
-						scid = p.id
-						break
-				self.curPlaylist = self.presenter.scGetPlaylistById(scid).tracks
-				for i, e in enumerate(self.curPlaylist):
-					#print(e['title'])
-					_curPlaylist.append((["-"+e['title']], i))
-				self.listPl._options = _curPlaylist
-				self.listPl.value = 0
-				return
-		self.isSCPlaylist = False
-		path = self.presenter.config.playlist_folder + "/"+ \
-			playlistName if self.presenter.config.playlist_folder[len(self.presenter.config.playlist_folder)-1] != "/" else playlistName
-		self.curPlaylist = loadPlaylist(path)
-		_curPlaylist = []
-		for i, e in enumerate(self.curPlaylist):
-			_curPlaylist.append(([e.artist+" - "+e.song], i))
-		self.listPl._options = _curPlaylist
-		self.listPl.value = 0
+		currentPlaylist = self.playlistsInfo[self.listPls.value]
+		self.setCurrentPlaylist(currentPlaylist)

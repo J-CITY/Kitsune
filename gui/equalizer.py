@@ -7,6 +7,8 @@ from asciimatics.widgets import *
 from gui.utils import *
 from tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
+from asciimatics.event import KeyboardEvent
+from asciimatics.screen import Screen
 
 from gui.dialog import AddMusicDialog
 from asciimatics.effects import Print, Clock
@@ -20,12 +22,8 @@ from gui.dialog_info import InfoDialog
 class EqualizerFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(EqualizerFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Equalizer")
-		self.upBar = upBar
-		self.downBar = downBar
-		self.dup = 0
-		self.ddown = 0
-
+			screen, screen.height, screen.width, has_border=False, upBar=upBar, downBar=downBar, name="Equalizer")
+		
 		self.eqIsBass = False
 		self.eqIsEcho = False
 		self.eqIsChorus = False
@@ -34,17 +32,8 @@ class EqualizerFrame(CustomFrame):
 
 		self.eqBass = [6, 5, 4]
 
-		dh = 0
-		i = 0
-		for l in upBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(upBar.lables[i], 0)
-			_l.add_widget(upBar.lables[i+1], 1)
-			_l.add_widget(upBar.lables[i+2], 2)
-			i+=3
-			dh+=1
-			self.dup += 1
+		self.addUpBar()
+
 		layout = Layout([1, 0.5], fill_frame=True)
 		self.add_layout(layout)
 
@@ -134,16 +123,7 @@ class EqualizerFrame(CustomFrame):
 		self.eqReverb = CustomCheckBox("Reverb", self.color, name="ReverbPreset", on_change=self.__onChangeReverb)
 		layout.add_widget(self.eqReverb, 1)
 
-		i = 0
-		for l in downBar.layouts:
-			_l = Layout([l[0],l[1],l[2]])
-			self.add_layout(_l)
-			_l.add_widget(downBar.lables[i], 0)
-			_l.add_widget(downBar.lables[i+1], 1)
-			_l.add_widget(downBar.lables[i+2], 2)
-			i+=3
-			dh+=1
-			self.ddown += 1
+		self.addDownBar()
 		
 		self.fix()
 

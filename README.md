@@ -14,6 +14,7 @@ I think this should work on Linux, but I have not tested ¯\\_(ツ)_/¯
 * use BASSlib
 
 * soundcloud
+* yandexmusic api
 * asciimatics
 * tinytag
 * six
@@ -41,6 +42,7 @@ Press `i` in any tab to see shortcuts.
 * Artist information
 * Lyrics
 * Soundcloud
+* Yandex Music
 * Can change appearance with config
 * Clock with mani ascii fonts
 * Music visualization
