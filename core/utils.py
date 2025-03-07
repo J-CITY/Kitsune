@@ -1,35 +1,52 @@
 import os, sys
-parentPath = os.path.abspath("../../")
+parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
-	
-from asciimatics.widgets import *
+try:
+	from wcwidth import wcswidth, wcwidth
+except:
+	exit(1)
+from tag_controller import Tag, Playlist, TrackType
 
-from strings import KITSUNE, OS_WIN, OS_LINUX
+#from strings import KITSUNE, OS_WIN, OS_LINUX
+#toaster = None
+#if os.name == OS_LINUX:
+#	import notify2
+#	notify2.init(KITSUNE)
+#else:
+#	from tinyWinToast import getToast
 
-toaster = None
-if os.name == OS_LINUX:
-	import notify2
-	notify2.init(KITSUNE)
-else:
-	from tinyWinToast import getToast
-from wcwidth import wcswidth
-from wcwidth import wcwidth
-from tag_controller import Tag, Playlist
+#def createNotify(title="", message="", ico="", wait=1000):
+#	if os.name == OS_LINUX:
+#		n = notify2.Notification(title, message, ico)
+#		n.set_urgency(notify2.URGENCY_NORMAL)
+#		n.set_timeout(wait)
+#	else:
+#		getToast(title, message, icon=ico, duration=wait, appId=KITSUNE).show()
 
-def createNotify(title="", message="", ico="", wait=1000):
-	if os.name == OS_LINUX:
-		n = notify2.Notification(title, message, ico)
-		n.set_urgency(notify2.URGENCY_NORMAL)
-		n.set_timeout(wait)
-	else:
-		getToast(title, message, icon=ico, duration=wait, appId=KITSUNE).show()
+#------Logger------
 
+class LogLevel:
+	ERROR = 'ERROR'
+	WARNING = 'WARNING'
+	INFO = 'INFO'
 
-ADD_END = 0
-ADD_BEGIN = 1
-ADD_AFTER = 2
-ADD_BEFORE = 3
+def log(level, *arg):
+	print(level, ": ", arg)
+
+#------Logger end------
+
+class MusicAddPolitics:
+	ADD_END = 0
+	ADD_BEGIN = 1
+	ADD_AFTER = 2
+	ADD_BEFORE = 3
+
+class ColorTheme:
+	def __init__(self, color: int, attr: int, bg: int):
+		self.color = color
+		self.attr = attr
+		self.bg = bg
 
 def getColor(c: str) -> int:
 	map = {
@@ -56,12 +73,6 @@ def getAttr(a: str) -> int:
 	if a not in map:
 		return 2 #default value
 	return map[a]
-
-class ColorTheme:
-	def __init__(self, color: int, attr: int, bg: int):
-		self.color = color
-		self.attr = attr
-		self.bg = bg
 
 def split_text(text: str, width: int, height: int, unicode_aware=True):
 	tokens = text.split(" ")
@@ -102,12 +113,8 @@ def _find_min_start(text: str, max_width: int, unicode_aware=True, at_end=False)
 		result += 1
 	return result
 
-
-import json
-from collections import namedtuple
-from tag_controller import *
-
 def savePlaylist(playlist: Playlist, path: str):
+	import json
 	saveList = []
 	for i, t in enumerate(playlist.tracks):
 		_t = {
@@ -127,15 +134,18 @@ def savePlaylist(playlist: Playlist, path: str):
 		}
 		saveList.append(_t)
 
-	
 	outfile = open(path, 'w')
 	json.dump({'name': playlist.name, 'pl': saveList}, outfile)
 
 def loadPlaylist(path: str) -> Playlist:
-	print(path)
+	import json
+	from collections import namedtuple
+
+	log(LogLevel.INFO, "Load playlist", path)
 	try:
 		f = open(path, 'r')
 	except IOError as e:
+		log(LogLevel.ERROR, "Load playlist fail", path)
 		return Playlist()
 	else:
 		data = f.read()

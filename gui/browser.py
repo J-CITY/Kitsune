@@ -5,15 +5,15 @@ if parentPath not in sys.path:
 from asciimatics.widgets import *
 
 from gui.utils.widget import CustomFrame, CustomFileBrowser
-from gui.utils.utils import getColor
-from tag_controller import Tag, getTagFromPath
+from core.utils import getColor
+from core.tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 
-from gui.dialog import AddMusicDialog, ADD_END,ADD_BEGIN,ADD_AFTER,ADD_BEFORE
+from gui.dialog import AddMusicDialog
 
-from strings import CURRENT_PLAYLIST
+from core.strings import CURRENT_PLAYLIST
 from gui.dialog_info import InfoDialog
 
 class BrowserFrame(CustomFrame):

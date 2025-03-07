@@ -1,14 +1,17 @@
-import pylast
 import urllib.request
-from strings import OS_WIN, OS_LINUX
-import os
-#if os.name == OS_WIN:
-#	from PIL import Image
+from utils import log, LogLevel
+
+_HAS_LASTFM_LIB = False
+try:
+	import pylast
+	_HAS_LASTFM_LIB = True
+except ImportError or ModuleNotFoundError:
+	log(LogLevel.ERROR, "pylast lib not found")
 
 class Lastfm:
 	isInit = False
 	def __init__(self, apikey = None, lang='en'):
-		if apikey is None:
+		if apikey is None or _HAS_LASTFM_LIB == False:
 			return
 		self.lang = lang
 		self.network = pylast.LastFMNetwork(api_key=apikey)
@@ -17,10 +20,12 @@ class Lastfm:
 	def isInitial(self) -> bool:
 		return self.isInit
 	
-	def setPresenter(self, p):
-		self.presenter = p
+	#def setPresenter(self, p):
+	#	self.presenter = p
 
 	def getArtistBio(self, name):
+		if not self.isInit:
+			return ""
 		try:
 			artist = self.network.get_artist(name)
 		except:
@@ -31,20 +36,24 @@ class Lastfm:
 			return ""
 
 	def getAlbumImageUrl(self, artist, album):
+		if not self.isInit:
+			return None
 		try:
 			_album = self.network.get_album(artist, album)
 		except:
-			return ""
+			return None
 		if _album != None:
 			return _album.get_cover_image(2)
 		else:
-			return ""
+			return None
 
 	def saveAlbumArt(self, artist, album):
+		if not self.isInit:
+			return False
 		if self.presenter == None:
 			return False
 		url = self.getAlbumImageUrl(artist, album)
-		if url == "":
+		if url is None:
 			return False
 
 		path = self.presenter.config.cash_folder

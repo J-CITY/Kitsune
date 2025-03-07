@@ -1,43 +1,54 @@
 from pybass.pybass import *
-import sys, time
+from core.utils import log, LogLevel
+import sys, time, os
 
-from gui.utils.utils import loadPlaylist
+from utils import loadPlaylist
 from random import randint
 from tag_controller import *
 from multiprocessing import Process
+from strings import OS_LINUX, OS_WIN
 
-MOD_ONE_SONG = 0
-MOD_SONG_CIRCLE = 1
-MOD_ONE_PLAYLIST = 2
-MOD_PLAYLIST_CIRCLE = 3
-MOD_PLAYLIST_RANDOM = 4
+class PlayMode:
+	MOD_ONE_SONG = 0
+	MOD_SONG_CIRCLE = 1
+	MOD_ONE_PLAYLIST = 2
+	MOD_PLAYLIST_CIRCLE = 3
+	MOD_PLAYLIST_RANDOM = 4
 
-fx_module = ctypes.WinDLL('./bass_fx.dll')
-fx_func_type = ctypes.WINFUNCTYPE
 BASS_ATTRIB_TEMPO = 0x10000
 BASS_FX_FREESOURCE = 0x10000
-BASS_FX_TempoCreate = func_type(HSTREAM, ctypes.c_ulong, ctypes.c_ulong)(('BASS_FX_TempoCreate', fx_module))
 
 class Player:
 	def __init__(self, config):
-		if not BASS_Init(-1, 44100, 0, 0, 0):
-			print("BASS ERROR", get_error_description(BASS_ErrorGetCode()))
-			sys.exit(0)
+		# load dll/so
+		if platform.system() == OS_LINUX:
+			self.fx_module  = ctypes.cdll.LoadLibrary("libc.so.6")
+			self.fx_func_type = ctypes.CFUNCTYPE
+			self.BASS_FX_TempoCreate = func_type(HSTREAM, ctypes.c_ulong, ctypes.c_ulong)(('BASS_FX_TempoCreate', self.fx_module))
+		elif platform.system() == OS_WIN:
+			self.fx_module = ctypes.WinDLL('./bass_fx.dll')
+			self.fx_func_type = ctypes.WINFUNCTYPE
+			self.BASS_FX_TempoCreate = func_type(HSTREAM, ctypes.c_ulong, ctypes.c_ulong)(('BASS_FX_TempoCreate', self.fx_module))
 
+		# Init BASS lib
+		if not BASS_Init(-1, 44100, 0, 0, 0):
+			log(LogLevel.ERROR, "BASSlib can not init", get_error_description(BASS_ErrorGetCode()))
+			sys.exit(1)
+
+		# init streams
 		self.streams = [BASS_StreamCreateFile(False, "", 0, 0, BASS_UNICODE), BASS_StreamCreateFile(False, "", 0, 0, BASS_UNICODE)]
 		self.streamsId = 0
 
-		path = config.cash_folder + "/cash.json" if config.cash_folder[len(config.cash_folder)-1] != "/" else "cash.json"
+		# load cache playlist
+		path = os.path.join(config.cache_folder, "cache.json")
 		self.playlist = loadPlaylist(path)
 
-		
+		# TODO: save to cache id, mode, crossfate, and add def values to config
 		self.playlistId = 0
 		self.isPlay = False
 		self.mode = 0
 		self.crossfade = False
-		#bass.BASS_StreamFree(handle)
-		self.cfParam = 5
-
+		self.cfParam = 5 # crossfade offset, TODO: add to config
 		self.volume = BASS_GetVolume()
 
 		#EQ
@@ -83,7 +94,6 @@ class Player:
 		self.FlangeParam.lPhase = 0
 		self.isFlange = False
 
-
 		self.levelCount = 10
 		self.EQCenter = [80, 170, 310, 600, 1000, 3000, 6000, 10000, 12000, 14000]
 		self.EQHandle = [0,0,0,0,0,0,0,0,0,0]
@@ -92,13 +102,14 @@ class Player:
 		self.eqSpeedParam = 0
 
 		#Visualization
+		# TODO: add to confit def param and to cache
 		self.param = config.visualization
 
-	def getTag(self):
+	def getTag(self) -> Tag|None:
 		if (len(self.playlist.tracks) > self.playlistId):
 			return self.playlist.tracks[self.playlistId]
 		else:
-			return Tag()
+			return None
 
 	def destructor(self):
 		for s in self.streams:
@@ -109,14 +120,14 @@ class Player:
 		trackUrl = self.presenter.getYandexMusicTrackUrl(self.playlist.tracks[self.playlistId].globalId)
 		#print(trackUrl)
 		if trackUrl is not None:
-			fxch = BASS_StreamCreateURL(trackUrl.encode("utf-8"), False, BASS_STREAM_DECODE,DOWNLOADPROC(),0)
-			self.streams[self.streamsId] = BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
+			fxch = BASS_StreamCreateURL(trackUrl.encode("utf-8"), False, BASS_STREAM_DECODE, DOWNLOADPROC(), 0)
+			self.streams[self.streamsId] = self.BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
 
 	def play(self):
 		self.isPlay = True
 		#BASS_ChannelStop(self.streams[self.streamsId])
 		
-		self.streamsId = (self.streamsId+1)%2
+		self.streamsId = (self.streamsId + 1) % 2
 		_url = ''
 		if len(self.playlist.tracks) > self.playlistId:
 			track = self.playlist.tracks[self.playlistId]
@@ -124,22 +135,19 @@ class Player:
 
 		#BASS_ChannelStop(self.streams[self.streamsId])
 		#BASS_StreamFree
-		#TODO: in SC get url here
-		if _url[:4] == 'http' or _url[:3] == 'ftp':
-			fxch = BASS_StreamCreateURL(_url.encode("utf-8"), False, BASS_STREAM_DECODE,DOWNLOADPROC(),0)
-			self.streams[self.streamsId] = BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
+		if _url.startswith('http') or _url.startswith('ftp'):
+			# Now this case is impossible, because we can`t add it to playlist. But maybe in feature :thinking:
+			fxch = BASS_StreamCreateURL(_url.encode("utf-8"), False, BASS_STREAM_DECODE, DOWNLOADPROC(), 0)
+			self.streams[self.streamsId] = self.BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
 		elif track.type == TrackType.YANDEX_MUSIC:
 			self.playOnline()
 		else:
 			fxch = BASS_StreamCreateFile(False, _url, 0, 0, BASS_UNICODE|BASS_STREAM_DECODE)
-			self.streams[self.streamsId] = BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
-		#print(_url.encode("utf-8"))
+			self.streams[self.streamsId] = self.BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
+		#log(LogLevel.Info, _url.encode("utf-8"))
 		BASS_ChannelPlay(self.streams[self.streamsId], False)
-		
-		self.setEqParams()
 
-		self.presenter.createNotifySong(self.playlist.tracks[self.playlistId].artist, 
-			self.playlist.tracks[self.playlistId].album, self.playlist.tracks[self.playlistId].song)
+		self.setEqParams()
 
 	def stop(self):
 		self.isPlay = False
@@ -147,18 +155,23 @@ class Player:
 		BASS_ChannelStop(self.streams[1])
 
 	def next(self):
+		#TODO: add loop
 		self.isPlay = True
-		if (self.playlistId < len(self.playlist.tracks)-1):
+		if self.playlistId < self.playlist.getSize() - 1:
 			self.playlistId += 1
 			self.play()
 
 	def prev(self):
+		# TODO: add loop
 		self.isPlay = True
 		if (self.playlistId > 0):
 			self.playlistId -= 1
 			self.play()
 
 	def getVolume(self):
+		return BASS_GetVolume()
+
+	def getVolumeInPercent(self):
 		return BASS_GetVolume() * 100
 
 	def setVolume(self, _volume):
@@ -167,10 +180,12 @@ class Player:
 		BASS_SetVolume(self.volume)
 
 	def offOnVolume(self):
+		#TODO: save prev volume
 		v = 0
 		if BASS_GetVolume() == 0:
 			v = 0.5 if self.volume == 0 else self.volume
 		BASS_SetVolume(v)
+
 	def pause(self):
 		if BASS_ChannelIsActive(self.streams[self.streamsId]) == BASS_ACTIVE_PLAYING:
 			BASS_ChannelPause(self.streams[self.streamsId])
@@ -205,6 +220,7 @@ class Player:
 		_len = BASS_ChannelGetLength(self.streams[self.streamsId], BASS_POS_BYTE)
 		slen = BASS_ChannelBytes2Seconds(self.streams[self.streamsId], _len)
 		return slen
+
 	def getBuf(self):
 		if self.streams[self.streamsId] == 0:
 			return 0
@@ -213,10 +229,11 @@ class Player:
 		return sbuf
 
 	def getIsPlay(self):
-		if self.streams[self.streamsId] == 0:
-			return False
-		else:
-			return True
+		return self.isPlay
+		#if self.streams[self.streamsId] == 0:
+		#	return False
+		#else:
+		#	return True
 
 	def setPresenter(self, p):
 		self.presenter = p
@@ -225,7 +242,7 @@ class Player:
 
 	def update(self):
 		while True:
-			if self.mode == MOD_ONE_SONG:
+			if self.mode == PlayMode.MOD_ONE_SONG:
 				time.sleep(.200)
 				continue
 
@@ -240,19 +257,19 @@ class Player:
 				_sbuf = BASS_ChannelBytes2Seconds(self.streams[self.streamsId], _buf)
 				if _slen - _sbuf <= canPlay:
 					lenPl = len(self.playlist.tracks)
-					if self.mode == MOD_PLAYLIST_CIRCLE and lenPl > 0:
+					if self.mode == PlayMode.MOD_PLAYLIST_CIRCLE and lenPl > 0:
 						self.playlistId += 1
 						if self.playlistId >= lenPl:
 							self.playlistId = 0
-					if self.mode == MOD_ONE_PLAYLIST and lenPl > 0:
+					if self.mode == PlayMode.MOD_ONE_PLAYLIST and lenPl > 0:
 						self.playlistId += 1
 						if self.playlistId >= lenPl:
 							self.stop()
 							time.sleep(.200)
 							continue
-					elif self.mode == MOD_PLAYLIST_RANDOM and lenPl > 0:
+					elif self.mode == PlayMode.MOD_PLAYLIST_RANDOM and lenPl > 0:
 						self.playlistId = randint(0, lenPl-1)
-					elif self.mode == MOD_SONG_CIRCLE:
+					elif self.mode == PlayMode.MOD_SONG_CIRCLE:
 						pass
 					elif lenPl == 0:
 						self.stop()
@@ -265,13 +282,9 @@ class Player:
 
 	def setEqLevelParam(self, param):
 		self.eqLevelParam = param
-	
 	def setEqSpeedParam(self, param):
 		self.eqSpeedParam = param
-		
-		
 		#BASS_ChannelPlay(tempostream, False)
-
 	def setEqBass(self, param):
 		self.isBass = param
 	def setEqEcho(self, param):
@@ -315,15 +328,8 @@ class Player:
 				EQParam.fGain = self.eqLevelParam[i]
 			
 			if BASS_FXSetParameters(self.EQHandle[i], ctypes.pointer(EQParam)) == 0:
-				print('Error FX')
-		#if self.isBass:
-		#	for i in range(0, self.EQGainBassSize):
-		#		self.EQHandle[i] = BASS_ChannelSetFX(self.streams[self.streamsId], BASS_FX_DX8_PARAMEQ, 1)
-		#		EQParam = BASS_DX8_PARAMEQ()
-		#		print(i)
-		#		EQParam.fCenter = self.EQCenter[i]
-		#		EQParam.fGain = self.EQGainBass[i]
-		#		BASS_FXSetParameters(self.EQHandle[i], ctypes.pointer(EQParam))
+				log(LogLevel.ERROR, 'setEqParams, error FX')
+
 		if self.isChorus:
 			if self.ChorusHandle == 0:
 				self.ChorusHandle = BASS_ChannelSetFX(self.streams[self.streamsId], BASS_FX_DX8_CHORUS, 1)
@@ -355,7 +361,6 @@ class Player:
 		BASS_ChannelSetAttribute(self.streams[self.streamsId], BASS_ATTRIB_TEMPO, self.eqSpeedParam)
 
 	def getWaveData(self, isStereo, col):
-		
 		ci = BASS_CHANNELINFO()
 		if not BASS_ChannelGetInfo(self.streams[self.streamsId], ci):
 			print(('BASS_ChannelGetInfo error', get_error_description(BASS_ErrorGetCode())))
@@ -368,8 +373,8 @@ class Player:
 			"data": buf,
 			"channel": channel
 		}
-	
-	def getFFTData(self, isStereo, col):
+
+	def getFFTData(self, isStereo):
 		fft = (ctypes.c_float*1024)()
 		BASS_ChannelGetData(self.streams[self.streamsId], fft, BASS_DATA_FFT2048)
 		return {

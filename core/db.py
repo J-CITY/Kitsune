@@ -3,8 +3,8 @@ import sqlite3
 import os
 
 class Database:
-	def __init__(self):
-		self.PATH = 'E:\\music'
+	def __init__(self, musicPath):
+		self.PATH = musicPath
 		self.dbName = 'lib.db'
 		self.tableName = 'medialib'
 		self.create()

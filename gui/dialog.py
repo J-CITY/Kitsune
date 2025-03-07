@@ -6,12 +6,11 @@ from asciimatics.widgets import *
 from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 
-from gui.utils.utils import ColorTheme, getColor, getAttr, ADD_END, ADD_BEGIN, ADD_AFTER, ADD_BEFORE
+from core.utils import ColorTheme, getColor, getAttr, MusicAddPolitics
 from gui.utils.widget import CustomText
 from functools import partial
 
 class AddMusicDialog(Frame):
-
 	def __init__(self, screen, text, buttons, 
 			addList = [],
 			playlistLists = [],

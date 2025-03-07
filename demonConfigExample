@@ -1,0 +1,25 @@
+{
+	"useInternet": true,
+	"cache_folder": "PATH_TO_CASH_FOLDER",
+	"playlist_folder": "playlists",
+	"download_folder": "PATH_TO_MUSIC_DOWNLOAD_FOLDER",
+	"music_root_dir":"PATH_TO_MUSIC_FOLDER",
+	"yandex_music": {
+		"token": ""
+	},
+	"sound_cloud": {
+		"client_id": "",
+		"client_secret": "",
+		"username": "",
+		"password": "",
+		"bpm": 0,//quality of music
+		"search_pages": 2
+	},
+	"lastfm": {
+		"apikey": "",
+		"lang": "en"
+	},
+	"lirycsApi": {
+		"apikey": ""
+	}
+}

@@ -1,10 +1,9 @@
 {
 	"useInternet": true,
-	"cash_folder": "PATH_TO_CASH_FOLDER",
+	"cache_folder": "PATH_TO_CASH_FOLDER",
 	"playlist_folder": "playlists",
 	"download_folder": "PATH_TO_MUSIC_DOWNLOAD_FOLDER",
-	"root_dir":"PATH_TO_MUSIC_FOLDER",
-	"notify_wait": "short",
+	"music_root_dir":"PATH_TO_MUSIC_FOLDER",
 	"yandex_music": {
 		"token": ""
 	},
@@ -16,19 +15,20 @@
 		"bpm": 0,//quality of music
 		"search_pages": 2
 	},
-	"bar": {//progerss bar style
-		"start_char": "",
-		"end_char": "",
-		"prev_char": "◈",
-		"cur_char": "◆",
-		"next_char": "◇"
-	},
 	"lastfm": {
 		"apikey": "",
 		"lang": "en"
 	},
 	"lirycsApi": {
 		"apikey": ""
+	},
+
+	"bar": {//progerss bar style
+		"start_char": "",
+		"end_char": "",
+		"prev_char": "◈",
+		"cur_char": "◆",
+		"next_char": "◇"
 	},
 	"upBar": [//app bar configuration
 	{

@@ -1,5 +1,13 @@
 from typing import List, Union
 from enum import IntEnum
+from utils import log, LogLevel
+
+_HAS_MUSIC_TAG_LIB = False
+try:
+	import music_tag
+	_HAS_MUSIC_TAG_LIB = True
+except:
+	log(LogLevel.ERROR, "music_tag lib not found")
 
 class TrackType(IntEnum):
 	LOCAL = 1
@@ -41,16 +49,19 @@ class Tag:
 class Playlist:
 	def __init__(self):
 		self.name: str = ''
-		self.size: int = 0
 		self.tracks: List[Tag] = []
 
+	def getSize(self):
+		return len(self.tracks)
 
-def getTagFromPath(path: str) -> Tag:
-	import music_tag
+def getTagFromPath(path: str) -> Tag|None:
+	if not _HAS_MUSIC_TAG_LIB:
+		return None
 	try:
 		tag = music_tag.load_file(path)
 	except:
-		return Tag()
+		log(LogLevel.ERROR, "getTagFromPath can`t get tag", path)
+		return None
 	else:
 		resTag = Tag()
 		resTag.url = path
@@ -65,10 +76,12 @@ def getTagFromPath(path: str) -> Tag:
 	return resTag
 
 def setTagForPath(path: str, tag: Tag):
-	import music_tag
+	if not _HAS_MUSIC_TAG_LIB:
+		return
 	try:
 		tagSong = music_tag.load_file(path)
 	except:
+		log(LogLevel.ERROR, "setTagForPath can`t set tag", path)
 		return
 	else:
 		tagSong['artist'] = tag.artist

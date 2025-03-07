@@ -8,10 +8,10 @@ from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 import sys
 import os
-try:
-	import magic
-except ImportError:
-	pass
+#try:
+#	import magic
+#except ImportError:
+#	pass
 
 from gui.bar import *
 from gui.mainplaylist import *
@@ -23,17 +23,17 @@ from gui.visualization import *
 from gui.medialib import *
 from gui.artistInfo import *
 from gui.lyrics import *
-from player import Player
+from core.player import Player
 from gui.presenter import *
 from gui.search import *
 
-from lastfm_client import *
-from lyricsWiki import *
+from core.lastfm_client import *
+from core.lyricsWiki import *
 
-from soundcloud_client import SoundcloudClient
-from yandexMusicClient import YandexMusicClient
+from core.soundcloud_client import SoundcloudClient
+from core.yandexMusicClient import YandexMusicClient
 
-from db import *
+from core.db import *
 
 SCR = 1
 
