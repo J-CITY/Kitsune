@@ -1,5 +1,10 @@
+import os, sys
+parentPath = os.path.abspath("../")
+if parentPath not in sys.path:
+	sys.path.insert(0, parentPath)
+
 import urllib.request
-from utils import log, LogLevel
+from core.utils import log, LogLevel
 
 _HAS_LASTFM_LIB = False
 try:

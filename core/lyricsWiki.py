@@ -1,4 +1,8 @@
-from utils import log, LogLevel
+import os, sys
+parentPath = os.path.abspath("../")
+if parentPath not in sys.path:
+	sys.path.insert(0, parentPath)
+from core.utils import log, LogLevel
 
 _HAS_LIRICS_LIB = False
 try:
@@ -6,7 +10,6 @@ try:
 	_HAS_LIRICS_LIB = True
 except ImportError or ModuleNotFoundError:
 	log(LogLevel.ERROR, "lyricsgenius lib not found")
-
 
 class LyricsWiki:
 	isInit = False

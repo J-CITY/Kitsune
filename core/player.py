@@ -1,12 +1,15 @@
+import os, sys
+parentPath = os.path.abspath("../")
+if parentPath not in sys.path:
+	sys.path.insert(0, parentPath)
+
 from pybass.pybass import *
 from core.utils import log, LogLevel
-import sys, time, os
-
-from utils import loadPlaylist
+import time
 from random import randint
-from tag_controller import *
+from core.tag_controller import *
 from multiprocessing import Process
-from strings import OS_LINUX, OS_WIN
+from core.strings import OS_LINUX, OS_WIN
 
 class PlayMode:
 	MOD_ONE_SONG = 0

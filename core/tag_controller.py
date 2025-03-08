@@ -1,6 +1,11 @@
+import os, sys
+parentPath = os.path.abspath("../")
+if parentPath not in sys.path:
+	sys.path.insert(0, parentPath)
+
 from typing import List, Union
 from enum import IntEnum
-from utils import log, LogLevel
+from core.utils import log, LogLevel
 
 _HAS_MUSIC_TAG_LIB = False
 try:
@@ -56,6 +61,7 @@ class Playlist:
 
 def getTagFromPath(path: str) -> Tag|None:
 	if not _HAS_MUSIC_TAG_LIB:
+		log(LogLevel.ERROR, "getTagFromPath lib 'music_tag' not installed")
 		return None
 	try:
 		tag = music_tag.load_file(path)
@@ -65,12 +71,13 @@ def getTagFromPath(path: str) -> Tag|None:
 	else:
 		resTag = Tag()
 		resTag.url = path
-		resTag.artist = tag['artist']
-		resTag.album = tag['album']
-		resTag.song = tag['tracktitle']
+		#TODO: could be list
+		resTag.artist = str(tag['artist'])
+		resTag.album = str(tag['album'])
+		resTag.song = str(tag['tracktitle'])
 		resTag.fileName = path if path != None else ""
-		resTag.year = tag['year']
-		resTag.genre = tag['genre']
+		resTag.year = str(tag['year'])
+		resTag.genre = str(tag['genre'])
 		resTag.id = -1
 		resTag.globalId = -1
 	return resTag
@@ -90,3 +97,70 @@ def setTagForPath(path: str, tag: Tag):
 		tagSong['year'] = tag.year
 		tagSong['genre'] = tag.genre
 	return
+
+
+
+def savePlaylist(playlist: Playlist, path: str):
+	import json
+	saveList = []
+	for i, t in enumerate(playlist.tracks):
+		_t = {
+			'url': t.url,
+			'artist': t.artist if t.artist != None else "",
+			'album': t.album if t.album != None else "",
+			'song': t.song if t.song != None else "",
+			'fileName': t.fileName if t.fileName != None else "",
+			'year': t.year if t.year != None else "",
+			'genre': t.genre if t.genre != None else "",
+			'coverart': t.coverart if t.coverart != None else "",
+			'length': t.length if t.length != None else 0,
+			'curLength': t.curLength if t.curLength != None else 0,
+			'id': i,
+			'globalId': t.globalId,
+			"type": int(t.type)
+		}
+		print(_t)
+		saveList.append(_t)
+
+	outfile = open(path, 'w')
+	json.dump({'name': playlist.name, 'pl': saveList}, outfile)
+
+def loadPlaylist(path: str) -> Playlist:
+	import json
+	from collections import namedtuple
+
+	log(LogLevel.INFO, "Load playlist", path)
+	try:
+		f = open(path, 'r')
+	except IOError as e:
+		log(LogLevel.ERROR, "Load playlist fail", path)
+		return Playlist()
+	else:
+		data = f.read()
+		#print(data)
+		jspl = json.loads(data, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
+
+		res = []
+		for e in jspl.pl:
+			#print(e)
+			t = Tag()
+			t.url = e.url
+			t.artist = e.artist
+			t.album = e.album
+			t.song = e.song
+			t.fileName = e.fileName
+			t.year = e.year
+			t.genre = e.genre
+			t.coverart = e.coverart
+			t.length = e.length
+			t.curLength = e.curLength
+			t.id = e.id
+			t.globalId = e.globalId
+			t.type = TrackType(e.type)
+			res.append(t)
+
+		playlist = Playlist()
+		playlist.name = jspl.name
+		playlist.tracks = res
+		playlist.size = len(res)
+		return playlist

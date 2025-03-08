@@ -1,6 +1,10 @@
 # Deprecated: This API already died =(
 import urllib.request
-from utils import log, LogLevel
+import os, sys
+parentPath = os.path.abspath("../")
+if parentPath not in sys.path:
+	sys.path.insert(0, parentPath)
+from core.utils import log, LogLevel
 
 _HAS_SOUNDCLOUD_LIB = False
 try:
