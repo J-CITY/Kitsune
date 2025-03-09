@@ -56,17 +56,7 @@ def init(screen, oldScene):
 	
 	presenter.setUpBar(upBar)
 	presenter.setDownBar(downBar)
-	#presenter.setBrowser(browser)
-	#presenter.setMainPlaylist(mainplaylist)
-	#presenter.setPlaylists(playlists)
-	#presenter.setEqualizer(equalizer)
-	#presenter.setClock(clock)
-	#presenter.setVisualization(viz)
-	#presenter.setMedialib(medialib)
-	#presenter.setSearch(search)
 
-	#mainplaylist = MainPlaylistFrame(screen, upBar, downBar, config)
-	#mainplaylist.setPresenter(presenter)
 
 	if FRAME_MAIN_PLAYLIST not in config.screens:
 		log(LogLevel.ERROR, "Screen 'MainPlaylist' must be in config.screens")
