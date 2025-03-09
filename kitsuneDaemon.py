@@ -248,6 +248,10 @@ class CallbackServer(object):
 	@expose
 	def playerGetSongLength(self):
 		return player.getLen()
+
+	@expose
+	def playerSetCurrentPlaylist(self, pl):
+		player.playlist.tracks = pl
 	
 	@expose
 	def playerGetCurrentSongProgress(self):

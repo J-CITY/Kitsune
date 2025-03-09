@@ -13,13 +13,13 @@ from asciimatics.screen import Screen
 
 from gui.dialog import AddMusicDialog
 
-from core.strings import CURRENT_PLAYLIST
+from core.strings import CURRENT_PLAYLIST, FRAME_BROWSER, SONG_FORMATS
 from gui.dialog_info import InfoDialog
 
 class BrowserFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
 		super(BrowserFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Browser", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name=FRAME_BROWSER, upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
 
 		self.addUpBar()
 		
@@ -31,10 +31,9 @@ class BrowserFrame(CustomFrame):
 								 config,
 								 name="browser",
 								 on_select=self._play,
-								 formats=[".mp3", ".flac", ".wav"])
+								 formats=SONG_FORMATS)
 		layout.add_widget(self.browser)
 		self.addDownBar()
-		
 		self.fix()
 
 	def process_event(self, event):
@@ -45,7 +44,7 @@ class BrowserFrame(CustomFrame):
 			self.swichWindow(self.presenter, event)
 			self.presenter.playerEventControl(event)
 			if event.key_code in [ord('e')]:
-				self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, False, "current")
+				self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, False, CURRENT_PLAYLIST)
 			if event.key_code in [ord('E')]:
 				pls = self.presenter.getListOfPlaylists()
 				for i, e in enumerate(pls):
@@ -66,7 +65,7 @@ class BrowserFrame(CustomFrame):
 						needListAdd = True,
 						needListPlaylists = True,
 						needPlayCb = True,
-						presenter=self.presenter, win="Browser"))
+						presenter=self.presenter, win=FRAME_BROWSER))
 			if event.key_code in [ord("i")]:
 				self._scene.add_effect(
 					InfoDialog(self._screen, 
@@ -79,10 +78,10 @@ class BrowserFrame(CustomFrame):
 	def setPresenter(self, p):
 		self.presenter = p
 
-	def _addToPlaylist(self, selected):
-		if selected == 0:
-			self.presenter.mainPlaylistAddSong(self.browser.value)
+	#def _addToPlaylist(self, selected):
+	#	if selected == 0:
+	#		self.presenter.mainPlaylistAddSong(self.browser.value)
 
 	def _play(self):
 		self.presenter.player.stop()
-		self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, True, "current")
+		self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, True, CURRENT_PLAYLIST)

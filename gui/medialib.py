@@ -7,15 +7,16 @@ from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 
 from gui.utils.widget import CustomFrame, CustomMultiColumnListBox
-from gui.utils.utils import getAttr, ColorTheme, getColor
+from core.utils import getAttr, ColorTheme, getColor, MusicAddPolitics
 
-from tag_controller import Tag, getTagFromPath
+from core.tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.dialog import AddMusicDialog
-from gui.dialog import AddMusicDialog, ADD_END,ADD_BEGIN,ADD_AFTER,ADD_BEFORE
-from strings import CURRENT_PLAYLIST
+from gui.dialog import AddMusicDialog
+from core.strings import CURRENT_PLAYLIST
 from gui.dialog_info import InfoDialog, TagEditorDialog
+from core.strings import *
 
 class MedialibFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, config):
@@ -115,10 +116,10 @@ class MedialibFrame(CustomFrame):
 							title, 
 							["OK", "Cancel"], 
 							addList = [
-								("At the end of playlist", ADD_END),
-								("At the beginning of playlist", ADD_BEGIN),
-								("After current song", ADD_AFTER),
-								("Before current song", ADD_BEFORE)
+								("At the end of playlist", MusicAddPolitics.ADD_END),
+								("At the beginning of playlist", MusicAddPolitics.ADD_BEGIN),
+								("After current song", MusicAddPolitics.ADD_AFTER),
+								("Before current song", MusicAddPolitics.ADD_BEFORE)
 							],
 							playlistLists = pls,
 							needNewPlaylist = True,
@@ -159,8 +160,8 @@ class MedialibFrame(CustomFrame):
 	def addSong(self, play=True):
 		e = self.curPlaylist[self.listSongs._line]
 		if play:
-			self.presenter.player.stop()
-		self.presenter.mainPlaylistAddSong(ADD_END, play, "current", e)
+			self.presenter.playerStop()
+		self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, play, CURRENT_PLAYLIST, e)
 
 	def openAlbum(self):
 		self.presenter.mainPlaylistOpen(self.getCurrentAlbum())

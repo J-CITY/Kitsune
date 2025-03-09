@@ -2,6 +2,13 @@
     "player.name": "Kitsune",
     "btn.ok": "OK",
     "btn.cancel": "Cancel",
-    "text.add.playlist.end": "At the end of playlist",
-    "text.add.playlist.begin": "At the beginning of playlist"
+    "text.add.end": "At the end of playlist",
+    "text.add.begin": "At the beginning of playlist",
+    "text.add.after": "After current song",
+    "text.add.before": "Before current song",
+
+    "add.song": "Add song",
+    "add.playlist": "Add playlist",
+    "playlists": "Playlists",
+    "playlist": "Playlist"
 }

@@ -62,6 +62,13 @@ class Presenter:
 		register_class_to_dict(Tag, tag_class_to_dict)
 		register_dict_to_class("core.tag_controller.Tag", tag_dict_to_class)
 
+		#TODO get from daemon config
+		self.isUseInternet = False
+		self.playlistsFolder = "playlists"
+
+	def getUseInternet(self):
+		return self.isUseInternet
+
 	def tryGetPlaylist(self, name: str) -> Playlist|None:#+
 		if name in self.playlistsCash:
 			return self.playlistsCash[name]
@@ -144,10 +151,14 @@ class Presenter:
 
 	def playerPlay(self, song):#+
 		tag = getTagFromPath(song)
-		tag.length = self.player.getLen()
+		tag.length = self.server.playerGetSongLength()
 		self.song = tag
-		self.player.playlist.tracks = [tag]
-		self.player.play()
+		#self.player.playlist.tracks = [tag]
+		self.server.playerSetCurrentPlaylist([tag])
+		self.server.play()
+
+	def playerStop(self):#+
+		self.server.stop()
 
 	def playerSwap(self, _from, _to):#+
 		if _from == _to:
@@ -160,7 +171,7 @@ class Presenter:
 		self.presenter.frames[FRAME_MAIN_PLAYLIST].table.updateList(self.server.playerGetPlaylist().tracks)
 	
 	def playlistAddPlaylist(self, pos, isPlay, name):
-		spl = self.playlists.curPlaylist
+		spl = self.frames[FRAME_PLAYLISTS].curPlaylist
 		if pos == MusicAddPolitics.ADD_END or pos == MusicAddPolitics.ADD_BEFORE:
 			for e in spl.tracks:
 				self.mainPlaylistAddSong(pos, isPlay, name, e)
@@ -189,11 +200,11 @@ class Presenter:
 					_isPlay = isPlay
 				self.mainPlaylistAddSong(pos, _isPlay, name, e)
 
-	def medialibUpdate(self):
-		self.medialib.updateMl()
+	def medialibUpdate(self):#+
+		self.frames[FRAME_MEDIALIB].updateMl()
 
 	def playlistAddSong(self, pos, isPlay, name):
-		e = self.playlists.curPlaylist.tracks[self.playlists.listPl._line]
+		e = self.frames[FRAME_PLAYLISTS].curPlaylist.tracks[self.frames[FRAME_PLAYLISTS].listPl._line]
 		self.mainPlaylistAddSong(pos, isPlay, name, e)
 
 	def mainPlaylistUpdateList(self):#+
@@ -225,24 +236,24 @@ class Presenter:
 		if e != None:
 			self.mainPlaylistAddSong(pos, isPlay, name, e)
 
-	def medialibGetCurrentTag(self):
-		return self.medialib.getCurrentTag()
+	def medialibGetCurrentTag(self):#+
+		return self.frames[FRAME_MEDIALIB].getCurrentTag()
 
-	def mainPlaylistAddSong(self, addParam, needPlay: bool, playlistName: str, _tag=None):
+	#TODO: create tag in browser
+	def mainPlaylistAddSong(self, addParam, needPlay: bool, playlistName: str, _tag=None):#+
 		if _tag == None:
-			song = self.browser.browser.value
+			song = self.frames[FRAME_BROWSER].browser.value
 			tag = getTagFromPath(song)
 		else:
 			tag = _tag
 
-		if len(self.presenter.frames[FRAME_MAIN_PLAYLIST].table._options) > 0 and self.presenter.frames["MainPlaylist"].table._line < 0:
+		if len(self.presenter.frames[FRAME_MAIN_PLAYLIST].table._options) > 0 and self.presenter.frames[FRAME_MAIN_PLAYLIST].table._line < 0:
 			self.presenter.frames[FRAME_MAIN_PLAYLIST].table._line = 0
 
 		if playlistName == PLAYLIST_CURRENT:
-			playlist = self.player.playlist
+			playlist = self.server.playerGetPlaylist()
 		else:
-			path = self.config.playlist_folder + "/"+ \
-				playlistName if self.config.playlist_folder[len(self.config.playlist_folder)-1] != "/" else playlistName
+			path = os.path.join(self.playlistsFolder, playlistName)
 			playlist = loadPlaylist(path)
 
 		if addParam == MusicAddPolitics.ADD_END:
@@ -261,7 +272,7 @@ class Presenter:
 				playlist.tracks = playlist.tracks[0:tag.id]+[tag]+playlist.tracks[tag.id:]
 			for e in playlist.tracks[tag.id+1:]:
 				e.id+=1
-		elif addParam == MusicAddPolitics.ADD_BEFORE:#befor
+		elif addParam == MusicAddPolitics.ADD_BEFORE:
 			tag.id = self.presenter.frames[FRAME_MAIN_PLAYLIST].getCurrentLineId() if playlistName == PLAYLIST_CURRENT else 0
 			if tag.id == 0:
 				playlist.tracks = [tag]+playlist.tracks[tag.id:]
@@ -271,7 +282,7 @@ class Presenter:
 				e.id+=1
 
 		if playlistName == PLAYLIST_CURRENT:
-			self.player.playlist.tracks = playlist.tracks
+			self.server.playerSetCurrentPlaylist(playlist.tracks)
 			self.song = tag
 			self.presenter.frames[FRAME_MAIN_PLAYLIST].table.updateList(playlist.tracks)
 			if needPlay:
@@ -280,16 +291,19 @@ class Presenter:
 		else:
 			savePlaylist(playlist.tracks, path)
 			self.playlistsUpdatePlaylists()
-		
-	def createNewPlaylistAndSaveSong(self, playlistName):
-		path = self.config.playlist_folder + "/"+ \
-			playlistName if self.config.playlist_folder[len(self.config.playlist_folder)-1] != "/" else playlistName
-		
-		song = self.browser.browser.value
+
+	def browserCreateNewPlaylistAndSaveSong(self, playlistName):#+
+		frame = self.presenter.frames.get(FRAME_BROWSER, None)
+		if frame is None:
+			log(LogLevel.INFO, "browserCreateNewPlaylistAndSaveSong: 'BrowserFrame' doesn`t exist")
+			return
+
+		pathPlaylist = os.path.join(self.playlistsFolder, playlistName)
+		song = self.frames[FRAME_BROWSER].browser.value
 		tag = getTagFromPath(song)
 		tag.length = self.player.getLen()
 		tag.id = 0
-		savePlaylist([tag], path)
+		savePlaylist([tag], pathPlaylist)
 		self.playlistsUpdatePlaylists()
 
 	# TODO: think this is should delete
@@ -348,9 +362,7 @@ class Presenter:
 		self.playlistsUpdatePlaylists()
 
 	def createNewPlaylistFromSearch(self, playlistName):
-		path = self.config.playlist_folder + "/"+ \
-			playlistName if self.config.playlist_folder[len(self.config.playlist_folder)-1] != "/" else playlistName
-		
+		path = os.path.join(self.playlistsFolder, playlistName)
 		e = self.search.getCurTag()
 		if e == None:
 			return
@@ -358,24 +370,24 @@ class Presenter:
 		self.playlistsUpdatePlaylists()
 
 	def medialibCreateNewPlaylistAlbum(self, playlistName):
-		path = self.config.playlist_folder + "/"+ \
-			playlistName if self.config.playlist_folder[len(self.config.playlist_folder)-1] != "/" else playlistName
+		path = os.path.join(self.playlistsFolder, playlistName)
 		playlist = self.medialibGetCurrentAlbum()
 		savePlaylist(playlist, path)
 		self.playlistsUpdatePlaylists()
 
-	def medialibGetCurrentAlbum(self):
-		return self.medialib.getCurrentAlbum()
+	def medialibGetCurrentAlbum(self):#+
+		return self.frames[FRAME_MEDIALIB].getCurrentAlbum()
 
 	def getListOfPlaylists(self) -> List[str]:#+
 		return self.server.getListOfPlaylists()
 
-	def getPathOfPlaylist(self, name):
-		return self.config.playlist_folder + "/" + name
+	def getPathOfPlaylist(self, name):#+
+		return os.path.join(self.playlistsFolder, name)
 
 	def playlistsUpdatePlaylists(self):
-		self.playlists.updatePlaylists()
+		self.frames[FRAME_PLAYLISTS].updatePlaylists()
 
+	#TODO: del, not used
 	def mainPlaylistUpdatePlayItem(self):#+
 		self.mainPlaylistSetPlayId(self.player.playlistId)
 		tag = self.player.playlist.tracks[self.player.playlistId]

@@ -142,11 +142,11 @@ class AddMusicDialog(Frame):
 		if self.win == "Medialib":
 			self.presenter.medialibCreateNewPlaylistAndSaveSong(self.newPlaylist.value)
 		elif self.win == "Browser":
-			self.presenter.createNewPlaylistAndSaveSong(self.newPlaylist.value)
+			self.presenter.browserCreateNewPlaylistAndSaveSong(self.newPlaylist.value)
 		self._scene.remove_effect(self)
 		if self._on_close:
 			self._on_close(-1)
-	
+
 	def _addNewPlaylistAndSaveMainPlaylistBtn(self):
 		#if new pl name == current or empty
 		if self.newPlaylist.value == "current" or self.newPlaylist.value == "":

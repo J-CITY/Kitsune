@@ -111,8 +111,8 @@ class Player:
 		# TODO: add to confit def param and to cache
 		# self.param = config.visualization
 
-	#def __del__(self):
-	#	self.destructor()
+	def __del__(self):
+		self.destructor()
 	#TODO: delete it
 	def setUpdatePlayerItemCb(self, cb):
 		self.updatePlayerItemCb = cb
@@ -132,6 +132,7 @@ class Player:
 		BASS_Free()
 
 	def playOnline(self):
+		trackUrl = None
 		if self.getYandexMusicUrlCb:
 			trackUrl = self.getYandexMusicUrlCb(self.playlist.tracks[self.playlistId].globalId)
 		#print(trackUrl)
