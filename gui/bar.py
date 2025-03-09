@@ -3,21 +3,16 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 
-import json
-from collections import namedtuple
 from asciimatics.widgets import *
-from gui.utils.utils import ColorTheme, getColor, getAttr
+from core.utils import ColorTheme, getColor, getAttr
 from gui.utils.widget import CustomLabel
 
 UP_BAR = 'up'
 DOWN_BAR = 'down'
-
-
 class Bar:
 	def __init__(self):
 		self.layouts =  []
 		self.lables =  []
-		
 
 	def parse(self, jstr, b):
 		self.start_char = jstr.bar.start_char
@@ -63,7 +58,7 @@ class Bar:
 			self.lables.append(rw)
 			
 	def update(self, tag):
-		for l in self. lables:
+		for l in self.lables:
 			l.updateLable(tag, self.start_char, self.prev_char, self.cur_char, self.next_char, self.end_char)
 
 	def setFrame(self, f):

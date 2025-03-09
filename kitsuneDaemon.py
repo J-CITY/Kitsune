@@ -1,7 +1,7 @@
 from core.utils import log, LogLevel
 from core.tag_controller import loadPlaylist, savePlaylist
 import time
-import asyncio
+import asyncio, threading
 import collections
 from core.db import *
 from core.player import Player
@@ -45,17 +45,25 @@ def initDb(config):
 	db = Database(config.music_root_dir)
 	return db
 
+
+config = initConfig()
+initDirs(config)
+db = initDb(config)
+player = Player(config)
+
 class CallbackServer(object):
 	def __init__(self):
-		self.config = initConfig()
-		initDirs(self.config)
-		self.db = initDb(self.config)
-		self.player = Player(self.config)
+		threadPlayer = threading.Thread(target=self.playerUpdate)
+		threadPlayer.daemon = True
+		threadPlayer.start()
+
+	def playerUpdate(self):
+		player.update()
 
 	@expose
 	def updateDb(self, callback):
 		#TODO delete old db if exist
-		self.db.walk()
+		db.walk()
 		log(LogLevel.INFO, "Database is updated")
 		callback._pyroClaimOwnership()
 		callback.default()
@@ -63,85 +71,106 @@ class CallbackServer(object):
 	@expose
 	@oneway
 	def play(self):
-		self.player.play()
+		player.play()
 		print("play")
 
 	@expose
 	@oneway
 	def pause(self):
-		self.player.pause()
+		player.pause()
 		print("pause")
 
 	@expose
 	@oneway
 	def stop(self):
-		self.player.stop()
+		player.stop()
 		print("stop")
 
 	@expose
 	@oneway
 	def prev(self):
-		self.player.prev()
+		player.prev()
 		print("prev")
 
 	@expose
 	@oneway
 	def next(self):
-		self.player.next()
+		player.next()
 		print("next")
 
 	@expose
 	@oneway
 	def volumeUp(self):
-		self.player.setVolume(self.player.getVolume() + 0.02)
+		player.setVolume(player.getVolume() + 0.02)
 		print("volume+")
 
 	@expose
 	@oneway
 	def volumeDown(self):
-		self.player.setVolume(self.player.getVolume() - 0.02)
+		player.setVolume(player.getVolume() - 0.02)
 		print("volume-")
 
 	@expose
 	def getVolume(self):
 		print("volume")
-		return self.player.getVolume()
+		return player.getVolume()
 
 	@expose
 	@oneway
 	def setVolume(self, v):
-		return self.player.setVolume(v)
+		return player.setVolume(v)
 	
 	@expose
 	@oneway
 	def setVolume(self, v):
-		return self.player.setVolume(v)
+		return player.setVolume(v)
 
 	@expose
 	@oneway
 	def mute(self):
-		return self.player.offOnVolume()
+		return player.offOnVolume()
+
+	@expose
+	@oneway
+	def move(self, val):
+		return player.move(val)
 	
 	@expose
 	def getCurrentSong(self):
-		return self.player.getTag()
+		return player.getTag()
+
+	@expose
+	def changeCrossfade(self):
+		player.crossfade = not player.crossfade
+
+	@expose
+	def changeMode(self):
+		player.mode = (player.mode+1) % 5
+
+	@expose
+	def getMode(self):
+		return player.mode
+
+	@expose
+	def getCrosfade(self):
+		return player.crossfade
 
 	@expose
 	def add(self, song):
 		log(LogLevel.INFO, song)
-		path = os.path.join(self.config.cache_folder, 'cache.json')
+		path = os.path.join(config.cache_folder, 'cache.json')
 		playlist = loadPlaylist(path)
 		tag = getTagFromPath(song)
 		if tag is not None:
 			tag.id = playlist.getSize()
 			playlist.tracks = playlist.tracks + [tag]
 			savePlaylist(playlist, path)
-			self.player.playlist = playlist
+			player.playlist = playlist
 			log(LogLevel.INFO, "Add song:", path)
 
 	@expose
 	def getCurrentPlaylist(self):
-		return self.player.playlist
+		return player.playlist
 
 	@expose
 	@oneway
@@ -160,19 +189,83 @@ class CallbackServer(object):
 		#callback._pyroClaimOwnership()
 		#callback.call("Some lirics")
 		print("getLirics dnoe")
-#######################################
 
 	@expose
-	def getCurrentSong(self):
-		return "Green Day - 21"
+	def playerPlayById(self, id):
+		if len(player.playlist.tracks) > id:
+			tag = player.playlist.tracks[id]
+			tag.length = player.getLen()
+			player.playlistId = id
+			player.stop()
+			player.play()
+			return tag
+		tag = player.getTag()
+		tag.length = player.getLen()
+		return tag
+
+	# TODO: think this is should delete
+	@expose
+	@oneway
+	def playerSetPlaylistId(self, id):
+		player.playlistId = id
+
+	@expose
+	def playerSwap(self, _from, _to):
+		if _from == _to:
+			return
+		ida = player.playlist.tracks[_from].id
+		idb = player.playlist.tracks[_to].id
+		itm = player.playlist.tracks[_from]
+		player.playlist.tracks[_from] = player.playlist.tracks[_to]
+		player.playlist.tracks[_to] = itm
+		player.playlist.tracks[_from].id = ida
+		player.playlist.tracks[_to].id = idb
+
+	@expose
+	def playerGetPlaylist(self):
+		return player.playlist
+
+	@expose
+	def playerGetCurrentTag(self):
+		return player.playlist.tracks[player.playlistId]
+
+	@expose
+	def playerGetCurrentTagWithLength(self):
+		tag = player.playlist.tracks[player.playlistId]
+		tag.length = player.getLen()
+		return tag
+
+	@expose
+	def playerDelete(self, id):
+		player.playlist.tracks = player.playlist.tracks[0:id]+player.playlist.tracks[id+1:]
+		for i in player.playlist.tracks[id:]:
+			i.id -= 1
+
+	@expose
+	def playerGetIsPlay(self):
+		return player.getIsPlay()
+
+	@expose
+	def playerGetSongLength(self):
+		return player.getLen()
+	
+	@expose
+	def playerGetCurrentSongProgress(self):
+		return player.getBuf()
+
+	@expose
+	def getListOfPlaylists(self):
+		arr = os.listdir(config.playlist_folder)
+		return arr
 
 	@expose
 	@oneway
-	def setData(self, data):
-		print("Data set", data)
-
-
-
+	def setUpdatePlayerItemCb(self, cb):
+		#cb._pyroClaimOwnership()
+		#print(2)
+		#cb.updatePlayerItemCb()
+		#print(3)
+		player.setUpdatePlayerItemCb(cb)
 
 #daemon = Daemon()
 #ns = locate_ns()

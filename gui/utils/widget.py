@@ -17,14 +17,13 @@ from math import sin, cos, pi, sqrt, log, exp
 from pyfiglet import Figlet, DEFAULT_FONT
 from asciimatics.renderers import FigletText
 
-from gui.utils.utils import getColor, getAttr, ColorTheme, split_text
+from core.utils import getColor, getAttr, ColorTheme, split_text, MusicAddPolitics
 import datetime
-from player import (MOD_ONE_SONG,MOD_SONG_CIRCLE,MOD_ONE_PLAYLIST,
-	MOD_PLAYLIST_CIRCLE,MOD_PLAYLIST_RANDOM)
 from six import with_metaclass
 import re
 from wcwidth import wcswidth
 import itertools
+from core.player import PlayMode
 
 class CustomLabel(Widget):
 	def __init__(self, height=1, align="<", divider=' '):
@@ -48,15 +47,15 @@ class CustomLabel(Widget):
 
 		if cf:
 			_str+="-c-"
-		if mode == MOD_ONE_SONG:
+		if mode == PlayMode.MOD_ONE_SONG:
 			_str+="-)-"
-		elif mode == MOD_SONG_CIRCLE:
+		elif mode == PlayMode.MOD_SONG_CIRCLE:
 			_str+="()-"
-		elif mode == MOD_ONE_PLAYLIST:
+		elif mode == PlayMode.MOD_ONE_PLAYLIST:
 			_str+="->-"
-		elif mode == MOD_PLAYLIST_CIRCLE:
+		elif mode == PlayMode.MOD_PLAYLIST_CIRCLE:
 			_str+="<>-"
-		elif mode == MOD_PLAYLIST_RANDOM:
+		elif mode == PlayMode.MOD_PLAYLIST_RANDOM:
 			_str+="-R-"
 		return _str
 
@@ -762,38 +761,44 @@ class CustomFrame(Frame):
 
 	def swichWindow(self, presenter, event):
 		from asciimatics.exceptions import NextScene
-		if event.key_code in [ord('1')]:
-			presenter.setFrameToBars("MainPlaylist")
-			raise NextScene("MainPlaylist")
-		elif event.key_code in [ord('2')]:
-			presenter.setFrameToBars("Browser")
-			raise NextScene("Browser")
-		elif event.key_code in [ord('3')]:
-			presenter.setFrameToBars("Playlists")
-			raise NextScene("Playlists")
-		elif event.key_code in [ord('4')]:
-			presenter.setFrameToBars("Medialib")
-			raise NextScene("Medialib")
-		elif event.key_code in [ord('5')]:
-			presenter.setFrameToBars("Visualizer")
-			raise NextScene("Visualizer")
-		elif event.key_code in [ord('6')]:
-			presenter.setFrameToBars("Equalizer")
-			raise NextScene("Equalizer")
-		elif event.key_code in [ord('7')]:
-			presenter.artistinfoUpdateText()
-			presenter.setFrameToBars("ArtistInfo")
-			raise NextScene("ArtistInfo")
-		elif event.key_code in [ord('8')]:
-			presenter.lyricsUpdateText()
-			presenter.setFrameToBars("Lyrics")
-			raise NextScene("Lyrics")
-		elif event.key_code in [ord('0')]:
-			presenter.setFrameToBars("Clock")
-			raise NextScene("Clock")
-		elif event.key_code in [ord('9')]:
-			presenter.setFrameToBars("Search")
-			raise NextScene("Search")
+
+		for i, screenName in enumerate(presenter.config.screens):
+			if event.key_code in [ord(str(i + 1))]:
+				presenter.setFrameToBars(screenName)
+				raise NextScene(screenName)
+		
+		#if event.key_code in [ord('1')]:
+		#	presenter.setFrameToBars("MainPlaylist")
+		#	raise NextScene("MainPlaylist")
+		#elif event.key_code in [ord('2')]:
+		#	presenter.setFrameToBars("Browser")
+		#	raise NextScene("Browser")
+		#elif event.key_code in [ord('3')]:
+		#	presenter.setFrameToBars("Playlists")
+		#	raise NextScene("Playlists")
+		#elif event.key_code in [ord('4')]:
+		#	presenter.setFrameToBars("Medialib")
+		#	raise NextScene("Medialib")
+		#elif event.key_code in [ord('5')]:
+		#	presenter.setFrameToBars("Visualizer")
+		#	raise NextScene("Visualizer")
+		#elif event.key_code in [ord('6')]:
+		#	presenter.setFrameToBars("Equalizer")
+		#	raise NextScene("Equalizer")
+		#elif event.key_code in [ord('7')]:
+		#	presenter.artistinfoUpdateText()
+		#	presenter.setFrameToBars("ArtistInfo")
+		#	raise NextScene("ArtistInfo")
+		#elif event.key_code in [ord('8')]:
+		#	presenter.lyricsUpdateText()
+		#	presenter.setFrameToBars("Lyrics")
+		#	raise NextScene("Lyrics")
+		#elif event.key_code in [ord('0')]:
+		#	presenter.setFrameToBars("Clock")
+		#	raise NextScene("Clock")
+		#elif event.key_code in [ord('9')]:
+		#	presenter.setFrameToBars("Search")
+		#	raise NextScene("Search")
 
 class VisualParam(Enum):
 	WAVE = 1

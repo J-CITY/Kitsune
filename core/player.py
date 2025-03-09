@@ -101,12 +101,24 @@ class Player:
 		self.EQCenter = [80, 170, 310, 600, 1000, 3000, 6000, 10000, 12000, 14000]
 		self.EQHandle = [0,0,0,0,0,0,0,0,0,0]
 		self.isBass = False
-		
+		self.eqLevelParam = [0, 0, 0 ,0, 0, 0, 0, 0, 0, 0]
 		self.eqSpeedParam = 0
+
+		self.updatePlayerItemCb = None
+		self.getYandexMusicUrlCb = None
 
 		#Visualization
 		# TODO: add to confit def param and to cache
-		self.param = config.visualization
+		# self.param = config.visualization
+
+	#def __del__(self):
+	#	self.destructor()
+	#TODO: delete it
+	def setUpdatePlayerItemCb(self, cb):
+		self.updatePlayerItemCb = cb
+
+	def setGetYandexMusicUrlCb(self, cb):
+		self.getYandexMusicUrlCb = cb
 
 	def getTag(self) -> Tag|None:
 		if (len(self.playlist.tracks) > self.playlistId):
@@ -120,13 +132,15 @@ class Player:
 		BASS_Free()
 
 	def playOnline(self):
-		trackUrl = self.presenter.getYandexMusicTrackUrl(self.playlist.tracks[self.playlistId].globalId)
+		if self.getYandexMusicUrlCb:
+			trackUrl = self.getYandexMusicUrlCb(self.playlist.tracks[self.playlistId].globalId)
 		#print(trackUrl)
 		if trackUrl is not None:
 			fxch = BASS_StreamCreateURL(trackUrl.encode("utf-8"), False, BASS_STREAM_DECODE, DOWNLOADPROC(), 0)
 			self.streams[self.streamsId] = self.BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
 
 	def play(self):
+		print("play")
 		self.isPlay = True
 		#BASS_ChannelStop(self.streams[self.streamsId])
 		
@@ -149,8 +163,19 @@ class Player:
 			self.streams[self.streamsId] = self.BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
 		#log(LogLevel.Info, _url.encode("utf-8"))
 		BASS_ChannelPlay(self.streams[self.streamsId], False)
-
+		
 		self.setEqParams()
+		#print("play1")
+		#if self.updatePlayerItemCb is not None:
+		#	print(self.playlistId)
+		#	tag = self.playlist.tracks[self.playlistId]
+		#	tag.length = self.getLen()
+		#	print("call1")
+		#	self.updatePlayerItemCb._pyroClaimOwnership()
+		#	print("call2")
+		#	self.updatePlayerItemCb.updatePlayerItemCb(self.playlistId, tag)
+		#else:
+		#	print("NONE")
 
 	def stop(self):
 		self.isPlay = False
@@ -195,12 +220,14 @@ class Player:
 			self.isPlay = False
 		else:
 			if self.streams[self.streamsId] == 0:
-				self.presenter.mainPlaylistSetPlayId(0)
-				tag = self.playlist.tracks[0]
-				tag.length = self.getLen()
-				self.presenter.song = tag
+				self.playlistId = 0
+				#self.presenter.mainPlaylistSetPlayId(0)
+				#tag = self.playlist.tracks[0]
+				#tag.length = self.getLen()
+				#self.presenter.song = tag
 				self.play()
 			else:
+				print("play 2")
 				BASS_ChannelPlay(self.streams[self.streamsId], False)
 			self.isPlay = True
 		
@@ -238,10 +265,10 @@ class Player:
 		#else:
 		#	return True
 
-	def setPresenter(self, p):
-		self.presenter = p
-		if self.playlist.tracks != []:
-			self.presenter.mainPlaylistUpdateList()
+	#def setPresenter(self, p):
+	#	self.presenter = p
+	#	if self.playlist.tracks != []:
+	#		self.presenter.mainPlaylistUpdateList()
 
 	def update(self):
 		while True:
@@ -280,7 +307,7 @@ class Player:
 						continue
 
 					self.play()
-					self.presenter.mainPlaylistUpdatePlayItem()
+					#self.presenter.mainPlaylistUpdatePlayItem()
 			time.sleep(.200)
 
 	def setEqLevelParam(self, param):
@@ -315,7 +342,6 @@ class Player:
 
 	def setEqParams(self):
 		self.restoreSoundEffect()
-		
 		#self.EQHandle = []
 		for i in range(0, self.levelCount):
 			#if EQHandle[i] == 0:
@@ -353,14 +379,14 @@ class Player:
 			if self.ReverbHandle != 0:
 				if BASS_FXGetParameters(self.ReverbHandle, ctypes.pointer(self.ReverbParam)):
 					BASS_FXSetParameters(self.ReverbHandle, ctypes.pointer(self.ReverbParam))
-		
+
 		if self.isFlange:
 			if self.FlangeHandle == 0:
 				self.FlangeHandle = BASS_ChannelSetFX(self.streams[self.streamsId], BASS_FX_DX8_FLANGER, 1)
 			if self.FlangeHandle != 0:
 				if BASS_FXGetParameters(self.FlangeHandle, ctypes.pointer(self.FlangeParam)):
 					BASS_FXSetParameters(self.FlangeHandle, ctypes.pointer(self.FlangeParam))
-		
+
 		BASS_ChannelSetAttribute(self.streams[self.streamsId], BASS_ATTRIB_TEMPO, self.eqSpeedParam)
 
 	def getWaveData(self, isStereo, col):

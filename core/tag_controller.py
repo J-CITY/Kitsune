@@ -59,6 +59,58 @@ class Playlist:
 	def getSize(self):
 		return len(self.tracks)
 
+def playlist_class_to_dict(obj):
+	print("{serializer hook, converting to dict: %s}" % obj)
+	return {
+		"__class__": "core.tag_controller.Playlist",
+		"name": obj.name,
+		"tracks": obj.tracks
+	}
+
+def playlist_dict_to_class(classname, d):
+	print("{deserializer hook, converting to class: %s}" % d)
+	p = Playlist()
+	p.name = d["name"]
+	p.tracks = d["tracks"]
+	return p
+
+def tag_class_to_dict(obj):
+	print("{serializer hook, converting to dict: %s}" % obj)
+	return {
+		"__class__": "core.tag_controller.Tag",
+		'url': obj.url,
+		'artist': obj.artist,
+		'album': obj.album,
+		'song': obj.song,
+		'fileName': obj.fileName,
+		'year': obj.year,
+		'genre': obj.genre,
+		'coverart': obj.coverart,
+		'length': obj.length,
+		'curLength': obj.curLength,
+		'id': obj.id,
+		'globalId': obj.globalId
+	}
+
+def tag_dict_to_class(classname, d):
+	print("{deserializer hook, converting to class: %s}" % d)
+	p = Tag()
+	p.url = d['url']
+	p.artist = d['artist']
+	p.album = d['album']
+	p.song = d['song']
+	p.fileName = d['fileName']
+	p.year = d['year']
+	p.genre = d['genre']
+	p.coverart = d['coverart']
+	p.length = d['length']
+	p.curLength = d['curLength']
+	p.id = d['id']
+	p.globalId = d['globalId']
+	return p
+
+
+
 def getTagFromPath(path: str) -> Tag|None:
 	if not _HAS_MUSIC_TAG_LIB:
 		log(LogLevel.ERROR, "getTagFromPath lib 'music_tag' not installed")

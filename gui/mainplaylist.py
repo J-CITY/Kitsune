@@ -2,13 +2,13 @@ import os, sys
 parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
-	
+
 from asciimatics.widgets import *
 from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
-from gui.utils.utils import getColor, getAttr, ColorTheme
+from core.utils import getColor, getAttr, ColorTheme, MusicAddPolitics
 from gui.utils.widget import CustomFrame, CustomMainPlaylistBox
 from gui.dialog import *
 from gui.dialog_info import InfoDialog
@@ -50,7 +50,6 @@ class MainPlaylistFrame(CustomFrame):
 			titles,
 			name="main_playlist",
 			on_select=self._play)
-
 		self.table.choiceCh = config.main_playlist.choice_char
 		self.table.itemCh = config.main_playlist.item_char
 		self.table.playCh = config.main_playlist.play_char
@@ -67,7 +66,8 @@ class MainPlaylistFrame(CustomFrame):
 				raise StopApplication("User quit")
 			self.swichWindow(self.presenter, event)
 			if event.key_code in [ord('e')]:
-				self.presenter.mainPlaylistSetPlayId(self.table.value)
+				self.table.playId = self.table.value
+				#self.presenter.mainPlaylistSetPlayId(self.table.value)
 				self.presenter.playerPlayById(self.table.value)
 			if event.key_code in [ord('j')]:#swap prev
 				_from = self.table._line
@@ -103,8 +103,8 @@ class MainPlaylistFrame(CustomFrame):
 						"Save playlist", 
 						["OK", "Cancel"], 
 						addList = [
-							("At the end of playlist", ADD_END),
-							("At the beginning of playlist", ADD_BEGIN)
+							("At the end of playlist", MusicAddPolitics.ADD_END),
+							("At the beginning of playlist", MusicAddPolitics.ADD_BEGIN)
 						],
 						playlistLists = pls,
 						needNewPlaylist = True,
@@ -126,6 +126,9 @@ class MainPlaylistFrame(CustomFrame):
 
 	def setPresenter(self, p):
 		self.presenter = p
+		self.presenter.addFrame(self.frameName, self)
+		#TODO: move it somewhere
+		self.presenter.mainPlaylistUpdateList()
 
 	def getCurrentLineId(self):
 		return self.table._line

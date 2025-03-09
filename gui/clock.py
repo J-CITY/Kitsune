@@ -5,7 +5,7 @@ if parentPath not in sys.path:
 from asciimatics.widgets import *
 
 from gui.utils import *
-from tag_controller import Tag, getTagFromPath
+#from tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.dialog import AddMusicDialog
@@ -13,7 +13,7 @@ from asciimatics.effects import Print, Clock
 from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 
-from gui.utils.utils import getColor, getAttr
+from core.utils import getColor, getAttr
 from gui.utils.widget import CustomFigletText, CustomFrame
 from asciimatics.renderers import Rainbow
 from gui.dialog_info import InfoDialog

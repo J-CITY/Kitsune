@@ -7,11 +7,10 @@ from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 
 from gui.utils.widget import CustomFileBrowser
-from gui.dialog import ADD_END
-from gui.utils.utils import ColorTheme, getColor, getAttr
+from core.utils import ColorTheme, getColor, getAttr
 from gui.utils.widget import CustomText, TextView
 from functools import partial
-from tag_controller import Tag, getTagFromPath, setTagForPath
+from core.tag_controller import Tag, getTagFromPath, setTagForPath
 
 CONTROL_INFO = """
 <q> <Q> - quit

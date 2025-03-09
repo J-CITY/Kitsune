@@ -8,12 +8,10 @@ class EKeyAction(Enum):
 	FRAME_LYRICS_ACTIVE = 4
 	FRAME_ARTIST_INFO_ACTIVE = 5
 
-class KeyboardConfig:
+class Keyboard:
 	def __init__(self, config):
 		self.keyMap: Dict[EKeyAction, List[int]] = {}
 		#TODO : read config
 
 	def getKey(self, id: EKeyAction) -> List[int]:
-		if (id in self.keyMap):
-			return self.keyMap[id]
-		return []
+		return self.keyMap.get(id, [])

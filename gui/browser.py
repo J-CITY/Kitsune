@@ -5,7 +5,7 @@ if parentPath not in sys.path:
 from asciimatics.widgets import *
 
 from gui.utils.widget import CustomFrame, CustomFileBrowser
-from core.utils import getColor
+from core.utils import getColor, MusicAddPolitics
 from core.tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 from asciimatics.event import KeyboardEvent
@@ -45,7 +45,7 @@ class BrowserFrame(CustomFrame):
 			self.swichWindow(self.presenter, event)
 			self.presenter.playerEventControl(event)
 			if event.key_code in [ord('e')]:
-				self.presenter.mainPlaylistAddSong(ADD_END, False, "current")
+				self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, False, "current")
 			if event.key_code in [ord('E')]:
 				pls = self.presenter.getListOfPlaylists()
 				for i, e in enumerate(pls):
@@ -56,10 +56,10 @@ class BrowserFrame(CustomFrame):
 						"Add song to playlist", 
 						["OK", "Cancel"], 
 						addList = [
-							("At the end of playlist", ADD_END),
-							("At the beginning of playlist", ADD_BEGIN),
-							("After current song", ADD_AFTER),
-							("Before current song", ADD_BEFORE)
+							("At the end of playlist", MusicAddPolitics.ADD_END),
+							("At the beginning of playlist", MusicAddPolitics.ADD_BEGIN),
+							("After current song", MusicAddPolitics.ADD_AFTER),
+							("Before current song", MusicAddPolitics.ADD_BEFORE)
 						],
 						playlistLists = pls,
 						needNewPlaylist = True,
@@ -85,4 +85,4 @@ class BrowserFrame(CustomFrame):
 
 	def _play(self):
 		self.presenter.player.stop()
-		self.presenter.mainPlaylistAddSong(ADD_END, True, "current")
+		self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, True, "current")

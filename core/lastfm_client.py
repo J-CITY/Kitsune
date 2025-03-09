@@ -15,12 +15,13 @@ except ImportError or ModuleNotFoundError:
 
 class Lastfm:
 	isInit = False
-	def __init__(self, apikey = None, lang='en'):
+	def __init__(self, apikey = None, lang='en', cacheFolder='cache'):
 		if apikey is None or _HAS_LASTFM_LIB == False:
 			return
 		self.lang = lang
 		self.network = pylast.LastFMNetwork(api_key=apikey)
 		self.isInit = True
+		self.cacheFolder = cacheFolder
 
 	def isInitial(self) -> bool:
 		return self.isInit
@@ -55,16 +56,13 @@ class Lastfm:
 	def saveAlbumArt(self, artist, album):
 		if not self.isInit:
 			return False
-		if self.presenter == None:
-			return False
 		url = self.getAlbumImageUrl(artist, album)
 		if url is None:
 			return False
 
-		path = self.presenter.config.cash_folder
-
 		#with open(path + '/album.png', 'wb') as handle:
-		urllib.request.urlretrieve(url, path + '/album.png')
+		path = os.path.join(self.cacheFolder, artist + '_' + album + '_album.png')
+		urllib.request.urlretrieve(url, path)
 
 		#if os.name == OS_WIN:
 		#	img = Image.open(path + '/album.png')

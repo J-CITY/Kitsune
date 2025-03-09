@@ -5,7 +5,7 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 from core.utils import log, LogLevel
-
+from core.tag_controller import setTagForPath
 _HAS_SOUNDCLOUD_LIB = False
 try:
 	import soundcloud
@@ -57,8 +57,8 @@ class SoundcloudClient:
 		urllib.request.urlretrieve(url, path)
 		self.setID3Tag(path, track)
 
-	def setPresenter(self, p):
-		self.presenter = p
+	#def setPresenter(self, p):
+	#	self.presenter = p
 
 	def getPlaylists(self):
 		if not self.isInitial():
@@ -82,7 +82,7 @@ class SoundcloudClient:
 		tag = Tag()
 		tag.artist = artist
 		tag.song = song
-		self.presenter.saveSongsMetadatas(path, tag)
+		setTagForPath(path, tag)
 
 	def like(self, id):
 		if not self.isInitial():
