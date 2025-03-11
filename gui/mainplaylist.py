@@ -12,11 +12,12 @@ from core.utils import getColor, getAttr, ColorTheme, MusicAddPolitics
 from gui.utils.widget import CustomFrame, CustomMainPlaylistBox
 from gui.dialog import *
 from gui.dialog_info import InfoDialog
+from core.strings import FRAME_MAIN_PLAYLIST
 
 class MainPlaylistFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(MainPlaylistFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="MainPlaylist", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name=FRAME_MAIN_PLAYLIST, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
 
 		self.addUpBar()
 		
@@ -28,7 +29,7 @@ class MainPlaylistFrame(CustomFrame):
 		playColors = []
 		data = []
 		titles = []
-		for itm in config.main_playlist.columns:
+		for itm in presenter.config.main_playlist.columns:
 			data.append(itm.data)
 			columnSize.append(itm.width)
 			c = itm.color.split(':')
@@ -37,7 +38,7 @@ class MainPlaylistFrame(CustomFrame):
 			choiceColors.append(ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2])))
 			c = itm.play_color.split(':')
 			playColors.append(ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2])))
-			if config.main_playlist.title:
+			if presenter.config.main_playlist.title:
 				titles.append(itm.title)
 		
 		self.table = CustomMainPlaylistBox(Widget.FILL_FRAME,
@@ -50,24 +51,24 @@ class MainPlaylistFrame(CustomFrame):
 			titles,
 			name="main_playlist",
 			on_select=self._play)
-		self.table.choiceCh = config.main_playlist.choice_char
-		self.table.itemCh = config.main_playlist.item_char
-		self.table.playCh = config.main_playlist.play_char
+		self.table.choiceCh = presenter.config.main_playlist.choice_char
+		self.table.itemCh = presenter.config.main_playlist.item_char
+		self.table.playCh = presenter.config.main_playlist.play_char
 
 		layout.add_widget(self.table)
 
 		self.addDownBar()
 		self.fix()
+		self.setPresenter(presenter)
 
 	def process_event(self, event):
 		# Do the key handling for this Frame.
 		if isinstance(event, KeyboardEvent):
-			if event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
-				raise StopApplication("User quit")
+			#if event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
+			#	raise StopApplication("User quit")
 			self.swichWindow(self.presenter, event)
 			if event.key_code in [ord('e')]:
 				self.table.playId = self.table.value
-				#self.presenter.mainPlaylistSetPlayId(self.table.value)
 				self.presenter.playerPlayById(self.table.value)
 			if event.key_code in [ord('j')]:#swap prev
 				_from = self.table._line
@@ -112,12 +113,12 @@ class MainPlaylistFrame(CustomFrame):
 						needListPlaylists = True,
 						needPlayCb = False,
 						presenter=self.presenter, win="MainPlaylist"))
-			if event.key_code in [ord("i")]:
-				self._scene.add_effect(
-					InfoDialog(self._screen, 
-						"Info",
-						["OK"],
-						config=self.presenter.config, win=self.frameName))
+			#if event.key_code in [ord("i")]:
+			#	self._scene.add_effect(
+			#		InfoDialog(self._screen, 
+			#			"Info",
+			#			["OK"],
+			#			config=self.presenter.config, win=self.frameName))
 
 			self.presenter.playerEventControl(event)
 			
@@ -127,7 +128,6 @@ class MainPlaylistFrame(CustomFrame):
 	def setPresenter(self, p):
 		self.presenter = p
 		self.presenter.addFrame(self.frameName, self)
-		#TODO: move it somewhere
 		self.presenter.mainPlaylistUpdateList()
 
 	def getCurrentLineId(self):
@@ -135,4 +135,3 @@ class MainPlaylistFrame(CustomFrame):
 
 	def _play(self):
 		self.presenter.mainPlaylistSetPlayId(self.table._line)
-		self.presenter.playerPlayById(self.table._line)

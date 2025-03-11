@@ -27,9 +27,9 @@ class PlaylistInfo:
 		self.name: str = n
 
 class PlaylistsFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(PlaylistsFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name=FRAME_PLAYLISTS, upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name=FRAME_PLAYLISTS, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
 		self.curPlaylist: Playlist = Playlist()
 		self.playlistsInfo: List[PlaylistInfo] = []
 		self.addUpBar()
@@ -37,14 +37,14 @@ class PlaylistsFrame(CustomFrame):
 		layout = Layout([1,1], fill_frame=True)
 		self.add_layout(layout)
 
-		c = config.playlists.color.split(':')
+		c = presenter.config.playlists.color.split(':')
 		self.color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		c = config.playlists.color_choice.split(':')
+		c = presenter.config.playlists.color_choice.split(':')
 		self.color_choice = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		c = config.playlists.color_not_focus.split(':')
+		c = presenter.config.playlists.color_not_focus.split(':')
 		self.color_not_focus = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		titlePls = config.playlists.title_playlists
-		titlePl = config.playlists.title_playlist
+		titlePls = presenter.config.playlists.title_playlists
+		titlePl = presenter.config.playlists.title_playlist
 		
 		self.listPls = CustomMultiColumnListBox(
 			Widget.FILL_FRAME,
@@ -54,8 +54,8 @@ class PlaylistsFrame(CustomFrame):
 			[],
 			titles=[titlePls],
 			name=FRAME_PLAYLISTS, on_change=self._on_change, on_select=self.openPlaylist)
-		self.listPls.choiceCh = config.main_playlist.choice_char
-		self.listPls.itemCh = config.main_playlist.item_char
+		self.listPls.choiceCh = presenter.config.main_playlist.choice_char
+		self.listPls.itemCh = presenter.config.main_playlist.item_char
 		layout.add_widget(self.listPls, 0)
 
 		self.listPl = CustomMultiColumnListBox(
@@ -66,12 +66,13 @@ class PlaylistsFrame(CustomFrame):
 			[],
 			titles=[titlePl],
 			name="Playlist", on_select=self.addSong)
-		self.listPl.choiceCh = config.main_playlist.choice_char
-		self.listPl.itemCh = config.main_playlist.item_char
+		self.listPl.choiceCh = presenter.config.main_playlist.choice_char
+		self.listPl.itemCh = presenter.config.main_playlist.item_char
 		layout.add_widget(self.listPl, 1)
 		
 		self.addDownBar()
 		self.fix()
+		self.setPresenter(presenter)
 
 	def popup(self):
 		pass
@@ -164,19 +165,18 @@ class PlaylistsFrame(CustomFrame):
 			#				["OK", "Cancel"],
 			#				presenter=self.presenter, win="download_sc"))
 			
-			#TODO: add check for SC
-			# Delete playlist ore playlist item
+			# Delete playlist or playlist item
 			if event.key_code in [ord('d')]:
 				if self.listPls._has_focus:
 					playlistName = self.listPls._options[self.listPls._line][0][0]
-					if playlistName[:3] != "SC:":
+					if self.currentPlaylist.type == TrackType.LOCAL:
 						rmpl = self.presenter.getPathOfPlaylist(playlistName)
 						if os.path.exists(rmpl):
 							os.remove(rmpl)
 						self.updatePlaylists()
 				elif self.listPl._has_focus:
 					playlistName = self.listPls._options[self.listPls._line][0][0]
-					if playlistName[:3] != "SC:":
+					if self.currentPlaylist.type == TrackType.LOCAL:
 						self.curPlaylist.tracks = self.curPlaylist.tracks[:self.listPl._line] + self.curPlaylist.tracks[self.listPl._line+1:]
 						_curPlaylist = []
 						for i, e in enumerate(self.curPlaylist.tracks):
@@ -189,13 +189,13 @@ class PlaylistsFrame(CustomFrame):
 			if event.key_code in [ord('j')]:#swap
 				if self.listPl._has_focus:
 					playlistName = self.listPls._options[self.listPls._line][0][0]
-					if playlistName[:3] != "SC:":
+					if self.currentPlaylist.type == TrackType.LOCAL:
 						_from = self.listPl._line
 						_to = self.listPl._line-1 if self.listPl._line > 0 else self.listPl._line
-
+						#TODO: move in to func
 						e = self.curPlaylist.tracks[_from]
 						self.curPlaylist.tracks[_from] = self.curPlaylist.tracks[_to]
-						self.curPlaylist[_to] = e
+						self.curPlaylist.tracks[_to] = e
 
 						e = self.curPlaylist.tracks[_from].id
 						self.curPlaylist.tracks[_from].id = self.curPlaylist.tracks[_to].id
@@ -210,10 +210,11 @@ class PlaylistsFrame(CustomFrame):
 						self.listPl.value = self.listPl._options[self.listPl._line][1]
 						path = self.presenter.getPathOfPlaylist(playlistName)
 						savePlaylist(self.curPlaylist, path)
+						#TODO: move in to func end
 			if event.key_code in [ord('k')]:#swap
 				if self.listPl._has_focus:
 					playlistName = self.listPls._options[self.listPls._line][0][0]
-					if playlistName[:3] != "SC:":
+					if self.currentPlaylist.type == TrackType.LOCAL:
 						_from = self.listPl._line
 						_to = self.listPl._line+1 if self.listPl._line < len(self.listPl._options)-1 else self.listPl._line
 				
@@ -294,7 +295,7 @@ class PlaylistsFrame(CustomFrame):
 		#		self.playlistsInfo.append(PlaylistInfo(TrackType.SOUND_CLOUD, e))
 
 		if self.presenter.isYandexMusicInit():
-			ymList = ["Yandex Music: likes"]
+			ymList = [YANDEX_MUSIC_LIKES]
 			ympls = self.presenter.getYandexMusicPlaylists()
 			for p in ympls:
 				ymList += [p.title]
@@ -314,51 +315,35 @@ class PlaylistsFrame(CustomFrame):
 	def setCurrentPlaylist(self, currentPlaylist: PlaylistInfo) -> NoReturn:
 		if currentPlaylist.type == TrackType.YANDEX_MUSIC:
 			_curPlaylist = []
-
-			if currentPlaylist.name == "Yandex Music: likes":
+			ympl = None
+			if currentPlaylist.name == YANDEX_MUSIC_LIKES:
 				ympl = self.presenter.getYandexMusicFavorites()
-
-				tracksId= []
-				for e in ympl:
-					tracksId.append(e.id)
-				tracks = self.presenter.getYandexMusicGetTracks(tracksId)
-				
-				self.curPlaylist = Playlist()
-				self.curPlaylist.name = "Yandex Music: likes"
-				for i, track in enumerate(tracks):
-					_curPlaylist.append((["-" + track.title], i))
-					t = Tag()
-					t.type = TrackType.YANDEX_MUSIC
-					t.url = str(track.title)
-					t.album = '' if len(track.albums) == 0 else track.albums[0].title
-					t.artist = '' if len(track.artists) == 0 else track.artists[0].name
-					t.song = track.title
-					t.globalId = track.id
-					self.curPlaylist.tracks.append(t)
-				self.listPl._options = _curPlaylist
-				self.listPl.value = 0
 			else:
 				ympl = self.presenter.getYandexMusicPlaylist(currentPlaylist.name)
-
-				tracksId= []
-				for e in ympl:
-					tracksId.append(e.id)
-				tracks = self.presenter.getYandexMusicGetTracks(tracksId)
-
-				self.curPlaylist = Playlist()
-				self.curPlaylist.name = currentPlaylist.name
-				for i, track in enumerate(tracks):
-					_curPlaylist.append((["-" + track.title], i))
-					t = Tag()
-					t.type = TrackType.YANDEX_MUSIC
-					t.url = str(track.title)
-					t.album = '' if len(track.albums) == 0 else track.albums[0].title
-					t.artist = track.artists[0].name
-					t.song = track.title
-					t.globalId = track.id
-					self.curPlaylist.tracks.append(t)
-				self.listPl._options = _curPlaylist
-				self.listPl.value = 0
+			tracksId= []
+			for e in ympl:
+				tracksId.append(e.id)
+			tracks = self.presenter.getYandexMusicGetTracks(tracksId)
+			self.curPlaylist = Playlist()
+			self.curPlaylist.name = currentPlaylist.name
+			for i, track in enumerate(tracks):
+				_curPlaylist.append((["-" + track.title], i))
+				t = Tag()
+				t.type = TrackType.YANDEX_MUSIC
+				t.url = str(track.title)
+				album = ''
+				for a in track.albums:
+					album += a.title
+				t.album = album
+				for i, a in enumerate(track.artists):
+					if i != 0:
+						t.artist += ","
+					t.artist += a.name
+				t.song = track.title
+				t.globalId = track.id
+				self.curPlaylist.tracks.append(t)
+			self.listPl._options = _curPlaylist
+			self.listPl.value = 0
 			return
 
 		#if currentPlaylist.type == TrackType.SOUND_CLOUD:
@@ -405,7 +390,7 @@ class PlaylistsFrame(CustomFrame):
 		#		self.listPl.value = 0
 		#	return
 		
-		path = os.path.join(self.presenter.playlistsFolder, currentPlaylist.name)
+		path = os.path.join(self.presenter.getPlaylistFolder(), currentPlaylist.name)
 		self.curPlaylist = loadPlaylist(path)
 		_curPlaylist = []
 		for i, e in enumerate(self.curPlaylist.tracks):
@@ -415,8 +400,10 @@ class PlaylistsFrame(CustomFrame):
 
 	def setPresenter(self, p):
 		self.presenter = p
+		self.presenter.addFrame(self.frameName, self)
 		self.updatePlaylists()
 
 	def _on_change(self):
-		currentPlaylist = self.playlistsInfo[self.listPls.value]
-		self.setCurrentPlaylist(currentPlaylist)
+		self.currentPlaylist = self.playlistsInfo[self.listPls.value]
+		self.setCurrentPlaylist(self.currentPlaylist)
+		

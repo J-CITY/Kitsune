@@ -14,14 +14,14 @@ from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.dialog import AddMusicDialog
 from gui.dialog import AddMusicDialog
-from core.strings import CURRENT_PLAYLIST
+from core.strings import CURRENT_PLAYLIST, FRAME_MEDIALIB
 from gui.dialog_info import InfoDialog, TagEditorDialog
 from core.strings import *
 
 class MedialibFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(MedialibFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Medialib", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name=FRAME_MEDIALIB, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
 		self.curPlaylist = []
 
 		self.addUpBar()
@@ -29,15 +29,15 @@ class MedialibFrame(CustomFrame):
 		layout = Layout([1,1,1], fill_frame=True)
 		self.add_layout(layout)
 
-		c = config.medialib.color.split(':')
+		c = presenter.config.medialib.color.split(':')
 		self.color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		c = config.medialib.color_choice.split(':')
+		c = presenter.config.medialib.color_choice.split(':')
 		self.color_choice = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		c = config.medialib.color_not_focus.split(':')
+		c = presenter.config.medialib.color_not_focus.split(':')
 		self.color_not_focus = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		titleArtist = config.medialib.title_artist
-		titleAlbum = config.medialib.title_album
-		titleSong = config.medialib.title_song
+		titleArtist = presenter.config.medialib.title_artist
+		titleAlbum = presenter.config.medialib.title_album
+		titleSong = presenter.config.medialib.title_song
 		
 		self.listArtists = CustomMultiColumnListBox(
 			Widget.FILL_FRAME,
@@ -47,8 +47,8 @@ class MedialibFrame(CustomFrame):
 			[],
 			titles=[titleArtist],
 			name="Artists", on_change=self._on_change_artist)
-		self.listArtists.choiceCh = config.main_playlist.choice_char
-		self.listArtists.itemCh = config.main_playlist.item_char
+		self.listArtists.choiceCh = presenter.config.main_playlist.choice_char
+		self.listArtists.itemCh = presenter.config.main_playlist.item_char
 		layout.add_widget(self.listArtists, 0)
 
 		self.listAlbums = CustomMultiColumnListBox(
@@ -59,8 +59,8 @@ class MedialibFrame(CustomFrame):
 			[],
 			titles=[titleAlbum],
 			name="Albums", on_change=self._on_change_album, on_select=self.openAlbum)
-		self.listAlbums.choiceCh = config.main_playlist.choice_char
-		self.listAlbums.itemCh = config.main_playlist.item_char
+		self.listAlbums.choiceCh = presenter.config.main_playlist.choice_char
+		self.listAlbums.itemCh = presenter.config.main_playlist.item_char
 		layout.add_widget(self.listAlbums, 1)
 
 		self.listSongs = CustomMultiColumnListBox(
@@ -71,16 +71,18 @@ class MedialibFrame(CustomFrame):
 			[],
 			titles=[titleSong],
 			name="Songs", on_select=self.addSong)
-		self.listSongs.choiceCh = config.main_playlist.choice_char
-		self.listSongs.itemCh = config.main_playlist.item_char
+		self.listSongs.choiceCh = presenter.config.main_playlist.choice_char
+		self.listSongs.itemCh = presenter.config.main_playlist.item_char
 		layout.add_widget(self.listSongs, 2)
 
 		self.addDownBar()
 		
 		self.fix()
+		self.setPresenter(presenter)
 
 	def popup(self):
 		pass
+
 	def details(self):
 		pass
 
@@ -169,6 +171,7 @@ class MedialibFrame(CustomFrame):
 
 	def setPresenter(self, p):
 		self.presenter = p
+		self.presenter.addFrame(self.frameName, self)
 		self.updateMl()
 
 	def updateMl(self):

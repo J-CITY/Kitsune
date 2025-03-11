@@ -17,29 +17,31 @@ from core.utils import getColor, getAttr
 from gui.utils.widget import CustomFigletText, CustomFrame
 from asciimatics.renderers import Rainbow
 from gui.dialog_info import InfoDialog
+from core.strings import FRAME_CLOCK
 
 class ClockFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(ClockFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Clock", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name=FRAME_CLOCK, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
 
 		self.addUpBar()
 
 	
 		self.addDownBar()
 
-		_font = config.clock.type
+		_font = presenter.config.clock.type
 		if _font == "digital":
-			_font = config.clock.digital.font
+			_font = presenter.config.clock.digital.font
 		self.clock = CustomFigletText(self._canvas, self.dup, self.ddown, 
-			config.clock.need_seconds, font=_font, config=config)
+			presenter.config.clock.need_seconds, font=_font, config=presenter.config)
 		self.add_effect(self.clock)
 				#colour=7, attr=0, bg=0
 		self.fix()
+		self.setPresenter(presenter)
 
 	def popup(self):
 		pass
-				
+
 	def details(self):
 		pass
 
@@ -65,3 +67,5 @@ class ClockFrame(CustomFrame):
 	
 	def setPresenter(self, p):
 		self.presenter = p
+		self.presenter.addFrame(self.frameName, self)
+

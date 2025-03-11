@@ -60,7 +60,7 @@ class Playlist:
 		return len(self.tracks)
 
 def playlist_class_to_dict(obj):
-	print("{serializer hook, converting to dict: %s}" % obj)
+	#print("{serializer hook, converting to dict: %s}" % obj)
 	return {
 		"__class__": "core.tag_controller.Playlist",
 		"name": obj.name,
@@ -68,14 +68,14 @@ def playlist_class_to_dict(obj):
 	}
 
 def playlist_dict_to_class(classname, d):
-	print("{deserializer hook, converting to class: %s}" % d)
+	#print("{deserializer hook, converting to class: %s}" % d)
 	p = Playlist()
 	p.name = d["name"]
 	p.tracks = d["tracks"]
 	return p
 
 def tag_class_to_dict(obj):
-	print("{serializer hook, converting to dict: %s}" % obj)
+	#print("{serializer hook, converting to dict: %s}" % obj)
 	return {
 		"__class__": "core.tag_controller.Tag",
 		'url': obj.url,
@@ -93,7 +93,7 @@ def tag_class_to_dict(obj):
 	}
 
 def tag_dict_to_class(classname, d):
-	print("{deserializer hook, converting to class: %s}" % d)
+	#print("{deserializer hook, converting to class: %s}" % d)
 	p = Tag()
 	p.url = d['url']
 	p.artist = d['artist']
@@ -109,8 +109,6 @@ def tag_dict_to_class(classname, d):
 	p.globalId = d['globalId']
 	return p
 
-
-
 def getTagFromPath(path: str) -> Tag|None:
 	if not _HAS_MUSIC_TAG_LIB:
 		log(LogLevel.ERROR, "getTagFromPath lib 'music_tag' not installed")
@@ -123,8 +121,10 @@ def getTagFromPath(path: str) -> Tag|None:
 	else:
 		resTag = Tag()
 		resTag.url = path
-		#TODO: could be list
-		resTag.artist = str(tag['artist'])
+		for i, artist in enumerate(tag['artist'].values):
+			if i != 0:
+				resTag.artist += ","
+			resTag.artist += artist
 		resTag.album = str(tag['album'])
 		resTag.song = str(tag['tracktitle'])
 		resTag.fileName = path if path != None else ""
@@ -171,7 +171,7 @@ def savePlaylist(playlist: Playlist, path: str):
 			'globalId': t.globalId,
 			"type": int(t.type)
 		}
-		print(_t)
+		#print(_t)
 		saveList.append(_t)
 
 	outfile = open(path, 'w')

@@ -7,6 +7,12 @@ FRAME_MAIN_PLAYLIST = "MainPlaylist"
 FRAME_BROWSER = "Browser"
 FRAME_PLAYLISTS = "Playlists"
 FRAME_MEDIALIB = "Medialib"
+FRAME_EQUALIZER = "Equalizer"
+FRAME_VISUALIZER = "Visualization"
+FRAME_SEARCH = "Search"
+FRAME_CLOCK = "Clock"
+FRAME_LYRICS = "Lyrics"
+FRAME_ARTIST_INFO = "ArtistInfo"
 
 SONG_FORMATS = [".mp3", ".flac", ".wav"]
 

@@ -155,7 +155,7 @@ class AddMusicDialog(Frame):
 		#save pl
 		if self.win == "MainPlaylist":
 			self.presenter.createNewPlaylistAndSaveMainPlaylist(self.newPlaylist.value)
-		elif self.win == "MedialibAlbum":
+		elif self.win == "Medialib":
 			self.presenter.medialibCreateNewPlaylistAlbum(self.newPlaylist.value)
 		elif self.win == "Search":
 			self.presenter.createNewPlaylistFromSearch(self.newPlaylist.value)

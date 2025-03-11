@@ -5,7 +5,7 @@ if parentPath not in sys.path:
 from asciimatics.widgets import *
 
 from gui.utils import *
-from tag_controller import Tag, getTagFromPath
+from core.tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
@@ -13,16 +13,17 @@ from asciimatics.screen import Screen
 from gui.dialog import AddMusicDialog
 from asciimatics.effects import Print, Clock
 
-from gui.utils.utils import getColor, getAttr, ColorTheme
+from core.utils import getColor, getAttr, ColorTheme
 from gui.utils.widget import (CustomFigletText, CustomFrame, 
 	CustomLabel, CustomMultiColumnListBox, CustomCheckBox)
 from asciimatics.renderers import Rainbow
 from gui.dialog_info import InfoDialog
+from core.strings import FRAME_EQUALIZER
 
 class EqualizerFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(EqualizerFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, upBar=upBar, downBar=downBar, name="Equalizer")
+			screen, screen.height, screen.width, has_border=False, upBar=upBar, downBar=downBar, name=FRAME_EQUALIZER)
 		
 		self.eqIsBass = False
 		self.eqIsEcho = False
@@ -37,11 +38,11 @@ class EqualizerFrame(CustomFrame):
 		layout = Layout([1, 0.5], fill_frame=True)
 		self.add_layout(layout)
 
-		self.ch_less = config.equalizer.bar_less
-		self.ch_more = config.equalizer.bar_more
-		c = config.equalizer.color.split(':')
+		self.ch_less = presenter.config.equalizer.bar_less
+		self.ch_more = presenter.config.equalizer.bar_more
+		c = presenter.config.equalizer.color.split(':')
 		self.color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		c = config.equalizer.color_choice.split(':')
+		c = presenter.config.equalizer.color_choice.split(':')
 		self.color_choice = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
 
 		lEq = CustomLabel(align=u'<')
@@ -67,12 +68,9 @@ class EqualizerFrame(CustomFrame):
 		self.listEqBar.itemCh = ''
 		layout.add_widget(self.listEqBar, 0)
 
-		
-
 		lEqSpeed = CustomLabel(align=u'<')
 		lEqSpeed.addLable("Speed",self.color,"%Speed")
 		layout.add_widget(lEqSpeed, 0)
-
 
 		self.listEqSpeed = CustomMultiColumnListBox(
 			2,
@@ -85,12 +83,10 @@ class EqualizerFrame(CustomFrame):
 		self.listEqSpeed.choiceCh = ''
 		self.listEqSpeed.itemCh = ''
 		layout.add_widget(self.listEqSpeed, 0)
-		#self.setEqSpeedParam()
 
 		lEqPreset = CustomLabel(align=u'<')
 		lEqPreset.addLable("Presets",self.color,"")
 		layout.add_widget(lEqPreset, 1)
-
 
 		self.eqPresets = []
 		self.eqPresets.append(CustomCheckBox("Custom", self.color, name="CustomPreset", on_change=self.__onChangePreset))
@@ -124,16 +120,17 @@ class EqualizerFrame(CustomFrame):
 		layout.add_widget(self.eqReverb, 1)
 
 		self.addDownBar()
-		
 		self.fix()
+		self.setPresenter(presenter)
 
 	def popup(self):
 		# Just confirm whenever the user actually selects something.
-		print('')
-				
+		pass
+
 	def details(self):
 		# If python magic is installed, provide a little more detail of the current file.
-		print('')
+		pass
+
 	def setEqBarParam(self):
 		self.eqBars = []
 		for i, l in enumerate(self.eqLevels):
@@ -212,7 +209,7 @@ class EqualizerFrame(CustomFrame):
 		super(EqualizerFrame, self).process_event(event)
 		self.updateFocusColor()
 		return
-		
+
 	def __onChangePreset(self):
 		for e in self.eqPresets:
 			if e._has_focus:
@@ -223,6 +220,7 @@ class EqualizerFrame(CustomFrame):
 					for ee in self.eqPresets:
 						if e != ee:
 							ee.value = False
+
 	def __onChangeBass(self):
 		if self.eqBass.value:
 			self.eqIsBass = True
@@ -243,12 +241,14 @@ class EqualizerFrame(CustomFrame):
 		else:
 			self.eqIsFlange = False
 		self.presenter.eqSetFlangeParam(self.eqIsFlange)
+
 	def __onChangeChorus(self):
 		if self.eqChorus.value:
 			self.eqIsChorus = True
 		else:
 			self.eqIsChorus = False
 		self.presenter.eqSetChorusParam(self.eqIsChorus)
+
 	def __onChangeReverb(self):
 		if self.eqReverb.value:
 			self.eqIsReverb = True
@@ -305,7 +305,9 @@ class EqualizerFrame(CustomFrame):
 			self.eqFlange.color = self.color_choice
 		else:
 			self.eqFlange.color = self.color
+
 	def setPresenter(self, p):
 		self.presenter = p
+		self.presenter.addFrame(self.frameName, self)
 		self.setEqBarParam()
 		self.setEqSpeedParam()

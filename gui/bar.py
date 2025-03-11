@@ -3,7 +3,6 @@ parentPath = os.path.abspath("../")
 if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 
-from asciimatics.widgets import *
 from core.utils import ColorTheme, getColor, getAttr
 from gui.utils.widget import CustomLabel
 
@@ -62,8 +61,7 @@ class Bar:
 			l.updateLable(tag, self.start_char, self.prev_char, self.cur_char, self.next_char, self.end_char)
 
 	def setFrame(self, f):
-		for l in self. lables:
-			#print(l._frame._name, f._name)
+		for l in self.lables:
 			l._frame = f
 
 	def getFrameName(self):

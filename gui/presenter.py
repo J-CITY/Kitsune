@@ -1,7 +1,6 @@
 import threading, time, os
 from Pyro5.api import expose, callback, Daemon, Proxy
 from Pyro5.api import register_dict_to_class, register_class_to_dict
-from core.tag_controller import Tag, Playlist, getTagFromPath, setTagForPath
 from core.utils import MusicAddPolitics
 from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
@@ -10,7 +9,7 @@ from gui.utils.widget import CustomFrame
 import threading, asyncio
 from enum import Enum
 from typing import NoReturn, Dict, Optional
-from core.tag_controller import playlist_class_to_dict, playlist_dict_to_class
+from core.tag_controller import Tag, Playlist, getTagFromPath, setTagForPath, playlist_class_to_dict, playlist_dict_to_class
 from core.strings import *
 
 PLAYLIST_CURRENT = 'current'
@@ -26,16 +25,6 @@ class CallbackHandler(object):
 	def default(self):
 		pass
 
-	@expose
-	@callback
-	def updatePlayerItemCb(self, id, tag):
-		global NEED_UPDATE_SONG_TAG
-		NEED_UPDATE_SONG_TAG = True
-		print("data")
-		self.presenter.frames[FRAME_MAIN_PLAYLIST].table.playId = id
-		print(LogLevel.INFO, "updatePlayerItemCb2")
-		self.presenter.song = tag
-		print(LogLevel.INFO, "updatePlayerItemCb3")
 
 
 class Presenter:
@@ -62,12 +51,22 @@ class Presenter:
 		register_class_to_dict(Tag, tag_class_to_dict)
 		register_dict_to_class("core.tag_controller.Tag", tag_dict_to_class)
 
-		#TODO get from daemon config
-		self.isUseInternet = False
-		self.playlistsFolder = "playlists"
+		self.useInternet = self.server.getUseInternet()
+		self.musicRootFolder = self.server.getMusicRootDir()
+		self.downloadFolder = self.server.getDownloadDir()
+		self.playlistFolder = self.server.getPlaylistDir()
 
 	def getUseInternet(self):
-		return self.isUseInternet
+		return self.useInternet
+	
+	def getPlaylistFolder(self):
+		return self.playlistFolder
+
+	def getMusicRootFolder(self):
+		return self.musicRootFolder
+
+	def getDownloadFolder(self):
+		return self.downloadFolder
 
 	def tryGetPlaylist(self, name: str) -> Playlist|None:#+
 		if name in self.playlistsCash:
@@ -101,47 +100,20 @@ class Presenter:
 	def getYandexMusicTrackUrl(self, id):
 		return self.yandexMusicClient.getTrackUrl(id)
 
-	def lyricsGetSongLyrics(self, artist, song):
-		if artist == "" or song == "":
-			return ""
-		if not self.config.useInternet:
-			return ""
-		return self.lyricsWiki.getLyrics(artist, song)
-
 	def isYandexMusicInit(self) -> bool:
-		return self.yandexMusicClient.isInitial()
+		return False #self.yandexMusicClient.isInitial()
 
-	def lastfmGetArtistBio(self, name):
-		if not self.config.useInternet:
-			return ""
-		return self.lastfm.getArtistBio(name)
+	def dbSelect(self, query):#+
+		return self.server.dbSelect(query)
 
-	def lastfmGetCurArtistBio(self):
-		tag = self.player.getTag()
-		if tag.artist == "":
-			return ""
-		else:
-			if not self.config.useInternet:
-				return ""
-			return self.lastfm.getArtistBio(tag.artist)
+	def dbSearch(self, text):#+
+		return self.server.dbSearch(text)
 
-	def lastfmSaveAlbum(self, artist, album):
-		return self.lastfm.saveAlbumArt(artist, album)
+	def dbExecute(self, text, params):#+
+		return self.server.dbExecute(text, params)
 
-	def lastfmGetAlbumUrl(self, artist, album):
-		return self.lastfm.getAlbumImageUrl(artist, album)
-
-	def dbSelect(self, e):
-		return self.db.select(e)
-
-	def dbSearch(self, text):
-		return self.db.search(text)
-
-	def dbExecute(self, text, params):
-		return self.db.execute(text, params)
-
-	def dbInsertByPath(self, path):
-		self.db.insertByPath(path)
+	def dbInsertByPath(self, path):#+
+		self.server.dbInsertByPath(path)
 
 	def playerGetCurTag(self):#+
 		return self.server.playerGetCurrentTag()
@@ -154,7 +126,7 @@ class Presenter:
 		tag.length = self.server.playerGetSongLength()
 		self.song = tag
 		#self.player.playlist.tracks = [tag]
-		self.server.playerSetCurrentPlaylist([tag])
+		self.server.playerSetCurrentPlaylistTracks([tag])
 		self.server.play()
 
 	def playerStop(self):#+
@@ -164,13 +136,13 @@ class Presenter:
 		if _from == _to:
 			return
 		self.server.playerSwap(_from, _to)
-		self.presenter.frames[FRAME_MAIN_PLAYLIST].table.updateList(self.server.playerGetPlaylist().tracks)
+		self.frames[FRAME_MAIN_PLAYLIST].table.updateList(self.server.playerGetPlaylist().tracks)
 
 	def playerDelete(self, id):#+
 		self.server.playerDelete(id)
-		self.presenter.frames[FRAME_MAIN_PLAYLIST].table.updateList(self.server.playerGetPlaylist().tracks)
+		self.frames[FRAME_MAIN_PLAYLIST].table.updateList(self.server.playerGetPlaylist().tracks)
 	
-	def playlistAddPlaylist(self, pos, isPlay, name):
+	def playlistAddPlaylist(self, pos, isPlay, name):#+
 		spl = self.frames[FRAME_PLAYLISTS].curPlaylist
 		if pos == MusicAddPolitics.ADD_END or pos == MusicAddPolitics.ADD_BEFORE:
 			for e in spl.tracks:
@@ -203,7 +175,7 @@ class Presenter:
 	def medialibUpdate(self):#+
 		self.frames[FRAME_MEDIALIB].updateMl()
 
-	def playlistAddSong(self, pos, isPlay, name):
+	def playlistAddSong(self, pos, isPlay, name):#+
 		e = self.frames[FRAME_PLAYLISTS].curPlaylist.tracks[self.frames[FRAME_PLAYLISTS].listPl._line]
 		self.mainPlaylistAddSong(pos, isPlay, name, e)
 
@@ -213,47 +185,43 @@ class Presenter:
 	def mainPlaylistOpen(self, pl):#+
 		for i, p in enumerate(pl):
 			p.id = i
-		self.player.playlist = pl
-		self.presenter.frames[FRAME_MAIN_PLAYLIST].table.updateList(pl)
-		self.presenter.frames[FRAME_MAIN_PLAYLIST].table.value = 0
-		self.presenter.frames[FRAME_MAIN_PLAYLIST].table._line = 0
+		self.server.playerSetCurrentPlaylistTracks(pl)
+		self.frames[FRAME_MAIN_PLAYLIST].table.updateList(pl)
+		self.frames[FRAME_MAIN_PLAYLIST].table.value = 0
+		self.frames[FRAME_MAIN_PLAYLIST].table._line = 0
 
 	def medialibCreateNewPlaylistAndSaveSong(self, playlistName):
-		path = self.config.playlist_folder + "/"+ \
-			playlistName if self.config.playlist_folder[len(self.config.playlist_folder)-1] != "/" else playlistName
-		
+		path = os.path.join(self.config.playlist_folder, playlistName)
 		song = self.medialibGetCurrentTag()
 		song.id = 0
 		savePlaylist([song], path)
 		self.playlistsUpdatePlaylists()
 
-	def medialibAddSong(self, pos, isPlay, name):
+	def medialibAddSong(self, pos, isPlay, name):#+
 		e = self.medialibGetCurrentTag()
 		self.mainPlaylistAddSong(pos, isPlay, name, e)
 
 	def searchAddSong(self, pos, isPlay, name):
-		e = self.search.getCurTag()
+		e = self.frames[FRAME_SEARCH].getCurTag()
 		if e != None:
 			self.mainPlaylistAddSong(pos, isPlay, name, e)
 
 	def medialibGetCurrentTag(self):#+
 		return self.frames[FRAME_MEDIALIB].getCurrentTag()
 
-	#TODO: create tag in browser
 	def mainPlaylistAddSong(self, addParam, needPlay: bool, playlistName: str, _tag=None):#+
 		if _tag == None:
-			song = self.frames[FRAME_BROWSER].browser.value
-			tag = getTagFromPath(song)
-		else:
-			tag = _tag
+			log(LogLevel.ERROR, "mainPlaylistAddSong: _tag in None")
+			return
 
-		if len(self.presenter.frames[FRAME_MAIN_PLAYLIST].table._options) > 0 and self.presenter.frames[FRAME_MAIN_PLAYLIST].table._line < 0:
-			self.presenter.frames[FRAME_MAIN_PLAYLIST].table._line = 0
+		tag = _tag
+		if len(self.frames[FRAME_MAIN_PLAYLIST].table._options) > 0 and self.frames[FRAME_MAIN_PLAYLIST].table._line < 0:
+			self.frames[FRAME_MAIN_PLAYLIST].table._line = 0
 
 		if playlistName == PLAYLIST_CURRENT:
 			playlist = self.server.playerGetPlaylist()
 		else:
-			path = os.path.join(self.playlistsFolder, playlistName)
+			path = os.path.join(self.config.playlist_folder, playlistName)
 			playlist = loadPlaylist(path)
 
 		if addParam == MusicAddPolitics.ADD_END:
@@ -265,7 +233,7 @@ class Presenter:
 			for e in playlist.tracks[1:]:
 				e.id+=1
 		elif addParam == MusicAddPolitics.ADD_AFTER:
-			tag.id = self.presenter.frames[FRAME_MAIN_PLAYLIST].getCurrentLineId()+1 if playlistName == PLAYLIST_CURRENT else 0
+			tag.id = self.frames[FRAME_MAIN_PLAYLIST].getCurrentLineId()+1 if playlistName == PLAYLIST_CURRENT else 0
 			if tag.id == len(playlist.tracks):
 				playlist.tracks = playlist.tracks[0:tag.id]+[tag]
 			else:
@@ -273,7 +241,7 @@ class Presenter:
 			for e in playlist.tracks[tag.id+1:]:
 				e.id+=1
 		elif addParam == MusicAddPolitics.ADD_BEFORE:
-			tag.id = self.presenter.frames[FRAME_MAIN_PLAYLIST].getCurrentLineId() if playlistName == PLAYLIST_CURRENT else 0
+			tag.id = self.frames[FRAME_MAIN_PLAYLIST].getCurrentLineId() if playlistName == PLAYLIST_CURRENT else 0
 			if tag.id == 0:
 				playlist.tracks = [tag]+playlist.tracks[tag.id:]
 			else:
@@ -282,23 +250,22 @@ class Presenter:
 				e.id+=1
 
 		if playlistName == PLAYLIST_CURRENT:
-			self.server.playerSetCurrentPlaylist(playlist.tracks)
+			self.server.playerSetCurrentPlaylistTracks(playlist.tracks)
 			self.song = tag
-			self.presenter.frames[FRAME_MAIN_PLAYLIST].table.updateList(playlist.tracks)
+			self.frames[FRAME_MAIN_PLAYLIST].table.updateList(playlist.tracks)
 			if needPlay:
 				self.mainPlaylistSetPlayId(tag.id)
-				self.player.play()
 		else:
 			savePlaylist(playlist.tracks, path)
 			self.playlistsUpdatePlaylists()
 
 	def browserCreateNewPlaylistAndSaveSong(self, playlistName):#+
-		frame = self.presenter.frames.get(FRAME_BROWSER, None)
+		frame = self.frames.get(FRAME_BROWSER, None)
 		if frame is None:
 			log(LogLevel.INFO, "browserCreateNewPlaylistAndSaveSong: 'BrowserFrame' doesn`t exist")
 			return
 
-		pathPlaylist = os.path.join(self.playlistsFolder, playlistName)
+		pathPlaylist = os.path.join(self.config.playlist_folder, playlistName)
 		song = self.frames[FRAME_BROWSER].browser.value
 		tag = getTagFromPath(song)
 		tag.length = self.player.getLen()
@@ -306,10 +273,9 @@ class Presenter:
 		savePlaylist([tag], pathPlaylist)
 		self.playlistsUpdatePlaylists()
 
-	# TODO: think this is should delete
 	def mainPlaylistSetPlayId(self, id):#+
-		self.presenter.frames[FRAME_MAIN_PLAYLIST].table.playId = id
-		self.server.playerSetPlaylistId(id)
+		self.frames[FRAME_MAIN_PLAYLIST].table.playId = id
+		self.playerPlayById(id)
 
 	def barUpdate(self):#+
 		localserver = Proxy("PYRONAME:kitsune.music.daemon")
@@ -317,6 +283,7 @@ class Presenter:
 			tag = localserver.playerGetCurrentTagWithLength()
 			self.frames[FRAME_MAIN_PLAYLIST].table.playId = tag.id
 			self.song = tag
+			#print(self.song)
 			if self.song != None:
 				tag = {
 					'url': self.song.url,
@@ -336,11 +303,11 @@ class Presenter:
 					'crossfade': localserver.getCrosfade(),
 				}
 
-				if localserver.playerGetIsPlay():
-					tag['length'] = int(localserver.playerGetSongLength())
-					tag['curLength'] = int(localserver.playerGetCurrentSongProgress())
-					self.upBar.update(tag)
-					self.downBar.update(tag)
+				#if localserver.playerGetIsPlay():
+				tag['length'] = int(localserver.playerGetSongLength())
+				tag['curLength'] = int(localserver.playerGetCurrentSongProgress())
+				self.upBar.update(tag)
+				self.downBar.update(tag)
 			time.sleep(.200)
 
 	def run(self):#+
@@ -348,9 +315,10 @@ class Presenter:
 		thread.daemon = True
 		thread.start()
 
-	def setFrameToBars(self, fstr):
-		frame = self.presenter.frames.get(fstr, None)
+	def setFrameToBars(self, fstr):#+
+		frame = self.frames.get(fstr, None)
 		if frame is None:
+			print("Fame none", fstr)
 			return
 		self.upBar.setFrame(frame)
 		self.downBar.setFrame(frame)
@@ -362,15 +330,15 @@ class Presenter:
 		self.playlistsUpdatePlaylists()
 
 	def createNewPlaylistFromSearch(self, playlistName):
-		path = os.path.join(self.playlistsFolder, playlistName)
-		e = self.search.getCurTag()
+		path = os.path.join(self.config.playlist_folder, playlistName)
+		e = self.frames[FRAME_SEARCH].getCurTag()
 		if e == None:
 			return
 		savePlaylist([e], path)
 		self.playlistsUpdatePlaylists()
 
 	def medialibCreateNewPlaylistAlbum(self, playlistName):
-		path = os.path.join(self.playlistsFolder, playlistName)
+		path = os.path.join(self.config.playlist_folder, playlistName)
 		playlist = self.medialibGetCurrentAlbum()
 		savePlaylist(playlist, path)
 		self.playlistsUpdatePlaylists()
@@ -382,19 +350,12 @@ class Presenter:
 		return self.server.getListOfPlaylists()
 
 	def getPathOfPlaylist(self, name):#+
-		return os.path.join(self.playlistsFolder, name)
+		return os.path.join(self.config.playlist_folder, name)
 
-	def playlistsUpdatePlaylists(self):
+	def playlistsUpdatePlaylists(self):#+
 		self.frames[FRAME_PLAYLISTS].updatePlaylists()
 
-	#TODO: del, not used
-	def mainPlaylistUpdatePlayItem(self):#+
-		self.mainPlaylistSetPlayId(self.player.playlistId)
-		tag = self.player.playlist.tracks[self.player.playlistId]
-		tag.length = self.player.getLen()
-		self.song = tag
-
-	def playerEventControl(self, event):
+	def playerEventControl(self, event):#+
 		if isinstance(event, KeyboardEvent):
 			if event.key_code in [ord('p')]:
 				self.server.pause()
@@ -407,10 +368,9 @@ class Presenter:
 				self.server.stop()
 				self.server.prev()
 			if event.key_code in [ord('.')]:
-				#TODO set num from config
-				self.server.move(5)
+				self.server.moveDirection(1)
 			if event.key_code in [ord(',')]:
-				self.server.move(-5)
+				self.server.moveDirection(-1)
 			if event.key_code in [ord('-')]:
 				self.server.volumeDown()
 			if event.key_code in [ord('=')]:
@@ -418,54 +378,86 @@ class Presenter:
 			if event.key_code in [ord('v')]:
 				self.server.mute()
 			if event.key_code in [ord('b')]:
-				#TODO: set modes from config
 				self.server.changeMode()
 			if event.key_code in [ord('c')]:
 				self.server.changeCrossfade()
 
-	def eqSetLevelParam(self, param):
-		self.player.setEqLevelParam(param)
-		self.player.setEqParams()
+	def eqSetLevelParam(self, param):#+
+		self.server.eqSetLevelParam(param)
 
-	def eqSetSpeedParam(self ,param):
-		self.player.setEqSpeedParam(param)
-		self.player.setEqParams()
+	def eqSetSpeedParam(self ,param):#+
+		self.server.eqSetSpeedParam(param)
 
-	def eqSetBassParam(self, param):
-		self.player.setEqBass(param)
-		self.player.setEqParams()
-	def eqSetEchoParam(self, param):
-		self.player.setEqEcho(param)
-		self.player.setEqParams()
+	def eqSetBassParam(self, param):#+
+		self.server.eqSetBassParam(param)
 
-	def eqSetChorusParam(self, param):
-		self.player.setEqChorus(param)
-		self.player.setEqParams()
+	def eqSetEchoParam(self, param):#+
+		self.server.eqSetEchoParam(param)
 
-	def eqSetFlangeParam(self, param):
-		self.player.setEqFlange(param)
-		self.player.setEqParams()
-	def eqSetReverbParam(self, param):
-		self.player.setEqReverb(param)
-		self.player.setEqParams()
+	def eqSetChorusParam(self, param):#+
+		self.server.eqSetChorusParam(param)
 
-	def playerGetWaveData(self, isSterio, col):
-		return self.player.getWaveData(isSterio, col)
-	def playerGetFFTData(self, isSterio, col):
-		return self.player.getFFTData(isSterio, col)
+	def eqSetFlangeParam(self, param):#+
+		self.server.eqSetFlangeParam(param)
 
-	def barGetFrameName(self):
+	def eqSetReverbParam(self, param):#+
+		self.server.eqSetReverbParam(param)
+
+	def playerGetWaveData(self, isSterio, col):#+
+		return self.server.playerGetWaveData(isSterio, col)
+
+	def playerGetFFTData(self, isSterio, col):#+
+		return self.server.playerGetFFTData(isSterio, col)
+
+	def barGetFrameName(self):#+
 		return self.upBar.getFrameName()
 
-	def artistinfoUpdateText(self):
-		if not self.config.useInternet:
-			return ''
-		self.artistinfo.updateText()
+	#TODO: maybe better create one thread for that
+	#def lastfmSaveAlbum(self, artist, album):
+	#	return self.lastfm.saveAlbumArt(artist, album)
+	#def lastfmGetAlbumUrl(self, artist, album):
+	#	return self.lastfm.getAlbumImageUrl(artist, album)
 
-	def lyricsUpdateText(self):
-		if not self.config.useInternet:
-			return
-		self.lyrics.updateText()
+	def artistinfoUpdateTextAsync(self, artist, server = None):
+		if server:
+			localserver = server
+		else:
+			localserver = Proxy("PYRONAME:kitsune.music.daemon")
+		text = localserver.lastfmGetArtistBio(artist)
+		if (self.frames[FRAME_ARTIST_INFO].artist == artist):
+			self.frames[FRAME_ARTIST_INFO].setText(text)
+		else:
+			self.artistinfoUpdateTextAsync(self.frames[FRAME_ARTIST_INFO].artist, localserver)
+
+	def artistinfoUpdateText(self):#+
+		#if not self.useInternet:
+		#	return ''
+		self.frames[FRAME_ARTIST_INFO].updateArtist()
+		thread = threading.Thread(target=self.artistinfoUpdateTextAsync, args=(self.frames[FRAME_ARTIST_INFO].artist,))
+		thread.daemon = True
+		thread.start()
+
+	def lyricsUpdateTextAsync(self, artist, song, server = None):
+		if server:
+			localserver = server
+		else:
+			localserver = Proxy("PYRONAME:kitsune.music.daemon")
+		text = localserver.lyricsGetSongLyrics(artist, song)
+		if self.frames[FRAME_LYRICS].artist == artist and self.frames[FRAME_LYRICS].song == song:
+			log(LogLevel.INFO, "lyrics2", text)
+			self.frames[FRAME_LYRICS].setText(text)
+		else:
+			log(LogLevel.INFO, "lyrics3", text)
+			self.lyricsUpdateTextAsync(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song, localserver)
+
+	def lyricsUpdateText(self):#+
+		#if not self.useInternet:
+		#	return
+		self.frames[FRAME_LYRICS].updateArtistSong()
+		thread = threading.Thread(target=self.lyricsUpdateTextAsync, \
+			args=(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song,))
+		thread.daemon = True
+		thread.start()
 
 	def playerGetLen(self):#+
 		return self.server.playerGetSongLength()

@@ -37,7 +37,10 @@ class Lastfm:
 		except:
 			return ""
 		if artist != None:
-			return artist.get_bio("content", language=self.lang)
+			res = artist.get_bio("content", language=self.lang)
+			if res:
+				return res
+			return ""
 		else:
 			return ""
 
@@ -68,3 +71,18 @@ class Lastfm:
 		#	img = Image.open(path + '/album.png')
 		#	img.save(path + '/album.ico')
 		return True
+	
+	def getTrackWiki(self, artist, song):
+		if not self.isInit:
+			return ""
+		try:
+			song = self.network.get_track(artist, song)
+		except:
+			return ""
+		if song != None:
+			res = song.get_wiki_content()
+			if res:
+				return res
+			return ""
+		else:
+			return ""

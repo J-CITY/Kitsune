@@ -6,25 +6,27 @@ from asciimatics.widgets import *
 from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 
-from tag_controller import Tag, getTagFromPath
+from core.tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.dialog import AddMusicDialog
 from asciimatics.effects import Print, Clock
 
-from gui.utils.utils import getColor, getAttr, ColorTheme
+from core.utils import getColor, getAttr, ColorTheme
 from gui.utils.widget import CustomFrame, TextView
 from asciimatics.renderers import Rainbow
 from gui.dialog_info import InfoDialog
 import asyncio
 from typing import NoReturn
+from core.strings import FRAME_LYRICS
 
+#TODO: cache
 class LyricsFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(LyricsFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Lyrics", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
-		self.dup = 0
-		self.ddown = 0
+			screen, screen.height, screen.width, has_border=False, name=FRAME_LYRICS, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
+		self.dup = len(upBar.layouts)
+		self.ddown = len(downBar.layouts)
 		self.artist = ""
 		self.song = ""
 		
@@ -35,12 +37,13 @@ class LyricsFrame(CustomFrame):
 		
 		self.addDownBar()
 
-		c = config.lyrics.color.split(':')
+		c = presenter.config.lyrics.color.split(':')
 		tcolor = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
 		self.text = TextView(self.screen.height-self.dup-self.ddown, tcolor, name="lyrics")
 		layout.add_widget(self.text)
 
 		self.fix()
+		self.setPresenter(presenter)
 
 	def process_event(self, event):
 		if isinstance(event, KeyboardEvent):
@@ -59,20 +62,15 @@ class LyricsFrame(CustomFrame):
 	
 	def setPresenter(self, p):
 		self.presenter = p
+		self.presenter.addFrame(self.frameName, self)
 
-	async def updateTextAsync(self, artist: str, song: str) -> NoReturn:
-		text = self.presenter.lyricsGetSongLyrics(artist, song)
-		if (self.artist == artist and self.song == song):
-			self.text.setText(text)
-		else:
-			asyncio.run(self.updateTextAsync(self.artist, self.song))
+	def setText(self, text):
+		self.text.setText(text)
 
-	def updateText(self):
+	def updateArtistSong(self):
 		if self.presenter != None and \
 			(self.artist != self.presenter.playerGetCurTag().artist\
 			or self.song != self.presenter.playerGetCurTag().song):
 			
 			self.artist = self.presenter.playerGetCurTag().artist
 			self.song = self.presenter.playerGetCurTag().song
-
-			asyncio.run(self.updateTextAsync(self.artist, self.song))

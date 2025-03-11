@@ -11,6 +11,20 @@ try:
 except ImportError or ModuleNotFoundError:
 	log(LogLevel.ERROR, "lyricsgenius lib not found")
 
+def extractLyrics(artist, song):
+	import json
+	import requests
+	link = 'https://api.lyrics.ovh/v1/'+artist.replace(' ', '%20')+'/'+song.replace(' ', '%20')
+	req = requests.get(link)
+	json_data = json.loads(req.content)
+	try:
+		lyrics = json_data['lyrics']
+		#print(lyrics)
+		return lyrics
+	except:
+		#print("Sont not found")
+		return ""
+
 class LyricsWiki:
 	isInit = False
 	def __init__(self, apikey=None):
@@ -23,13 +37,10 @@ class LyricsWiki:
 		return self.isInit
 
 	def getLyrics(self, artist: str, song: str):
-		if not self.isInit:
-			return ""
-		try:
-			artist = self.genius.search_artist(artist, max_songs=3)
-			song = artist.song(song)
-			return song.lyrics
-		except:
-			log(LogLevel.ERROR, "lyricsgenius can`t get lyrics")
-			return ""
+		#songs = self.genius.search_songs(artist + " " + song)["hits"]
+		#for s in songs:
+		#	if s['result']['title'] == song:
+		#		song_id = s['result']['id']
+		#		return self.genius.lyrics(song_id)
+		return extractLyrics(artist, song)
 

@@ -50,9 +50,28 @@ class Player:
 		self.playlistId = 0
 		self.isPlay = False
 		self.mode = 0
+		self.modeId = 0
 		self.crossfade = False
-		self.cfParam = 5 # crossfade offset, TODO: add to config
+		self.cfParam = config.player_cossfade_duration
 		self.volume = BASS_GetVolume()
+		
+		dictModes = {
+			"MOD_ONE_SONG": PlayMode.MOD_ONE_SONG,
+			"MOD_SONG_CIRCLE": PlayMode.MOD_SONG_CIRCLE,
+			"MOD_ONE_PLAYLIST": PlayMode.MOD_ONE_PLAYLIST,
+			"MOD_PLAYLIST_CIRCLE": PlayMode.MOD_PLAYLIST_CIRCLE,
+			"MOD_PLAYLIST_RANDOM": PlayMode.MOD_PLAYLIST_RANDOM
+		}
+		self.modes = []
+		for mstr in config.player_modes:
+			m = dictModes.get(mstr, None)
+			if m:
+				self.modes.append(m)
+			pass
+		if self.modes == []:
+			self.modes = [PlayMode.MOD_PLAYLIST_CIRCLE]
+
+		self.moveStep = config.player_move_step
 
 		#EQ
 		self.EQGainBassSize = 3
@@ -104,7 +123,6 @@ class Player:
 		self.eqLevelParam = [0, 0, 0 ,0, 0, 0, 0, 0, 0, 0]
 		self.eqSpeedParam = 0
 
-		self.updatePlayerItemCb = None
 		self.getYandexMusicUrlCb = None
 
 		#Visualization
@@ -113,9 +131,10 @@ class Player:
 
 	def __del__(self):
 		self.destructor()
-	#TODO: delete it
-	def setUpdatePlayerItemCb(self, cb):
-		self.updatePlayerItemCb = cb
+
+	def nextMode(self):
+		self.modeId = (self.modeId + 1) % len(self.modes)
+		self.mode = self.modes[self.modeId]
 
 	def setGetYandexMusicUrlCb(self, cb):
 		self.getYandexMusicUrlCb = cb
@@ -166,17 +185,6 @@ class Player:
 		BASS_ChannelPlay(self.streams[self.streamsId], False)
 		
 		self.setEqParams()
-		#print("play1")
-		#if self.updatePlayerItemCb is not None:
-		#	print(self.playlistId)
-		#	tag = self.playlist.tracks[self.playlistId]
-		#	tag.length = self.getLen()
-		#	print("call1")
-		#	self.updatePlayerItemCb._pyroClaimOwnership()
-		#	print("call2")
-		#	self.updatePlayerItemCb.updatePlayerItemCb(self.playlistId, tag)
-		#else:
-		#	print("NONE")
 
 	def stop(self):
 		self.isPlay = False
@@ -184,18 +192,26 @@ class Player:
 		BASS_ChannelStop(self.streams[1])
 
 	def next(self):
-		#TODO: add loop
+		if self.playlist.getSize() <= 0:
+			return
+
 		self.isPlay = True
 		if self.playlistId < self.playlist.getSize() - 1:
 			self.playlistId += 1
-			self.play()
+		else:
+			self.playlistId = 0
+		self.play()
 
 	def prev(self):
-		# TODO: add loop
+		if self.playlist.getSize() <= 0:
+			return
+
 		self.isPlay = True
-		if (self.playlistId > 0):
+		if self.playlistId > 0:
 			self.playlistId -= 1
-			self.play()
+		else:
+			self.playlistId = self.playlist.getSize() - 1
+		self.play()
 
 	def getVolume(self):
 		return BASS_GetVolume()
@@ -209,7 +225,6 @@ class Player:
 		BASS_SetVolume(self.volume)
 
 	def offOnVolume(self):
-		#TODO: save prev volume
 		v = 0
 		if BASS_GetVolume() == 0:
 			v = 0.5 if self.volume == 0 else self.volume
@@ -222,16 +237,15 @@ class Player:
 		else:
 			if self.streams[self.streamsId] == 0:
 				self.playlistId = 0
-				#self.presenter.mainPlaylistSetPlayId(0)
-				#tag = self.playlist.tracks[0]
-				#tag.length = self.getLen()
-				#self.presenter.song = tag
 				self.play()
 			else:
 				print("play 2")
 				BASS_ChannelPlay(self.streams[self.streamsId], False)
 			self.isPlay = True
-		
+
+	def moveDirection(self, mov):
+		self.move(mov * self.moveStep)
+
 	def move(self, mov):
 		len = BASS_ChannelGetLength(self.streams[self.streamsId], BASS_POS_BYTE)
 		buf = BASS_ChannelGetPosition(self.streams[self.streamsId], BASS_POS_BYTE)
@@ -308,7 +322,6 @@ class Player:
 						continue
 
 					self.play()
-					#self.presenter.mainPlaylistUpdatePlayItem()
 			time.sleep(.200)
 
 	def setEqLevelParam(self, param):
@@ -391,6 +404,7 @@ class Player:
 		BASS_ChannelSetAttribute(self.streams[self.streamsId], BASS_ATTRIB_TEMPO, self.eqSpeedParam)
 
 	def getWaveData(self, isStereo, col):
+		import numpy as np
 		ci = BASS_CHANNELINFO()
 		if not BASS_ChannelGetInfo(self.streams[self.streamsId], ci):
 			print(('BASS_ChannelGetInfo error', get_error_description(BASS_ErrorGetCode())))
@@ -399,16 +413,19 @@ class Player:
 		buf = (ctypes.c_float*(channel * col * 4))()#[channel * col * 4]
 		BASS_ChannelGetData(self.streams[self.streamsId], buf, (ci.chans * col * 4) | BASS_DATA_FLOAT)
 
+		arr = np.ctypeslib.as_array(buf)
 		return {
-			"data": buf,
+			"data": arr.shape,
 			"channel": channel
 		}
 
 	def getFFTData(self, isStereo):
+		import numpy as np
 		fft = (ctypes.c_float*1024)()
 		BASS_ChannelGetData(self.streams[self.streamsId], fft, BASS_DATA_FFT2048)
+		arr = np.ctypeslib.as_array(buf)
 		return {
-			"data": fft,
+			"data": arr.shape,
 			"channel": 2 if isStereo else 1
 		}
 

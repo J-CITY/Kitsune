@@ -24,6 +24,7 @@ import re
 from wcwidth import wcswidth
 import itertools
 from core.player import PlayMode
+from core.strings import FRAME_LYRICS, FRAME_ARTIST_INFO
 
 class CustomLabel(Widget):
 	def __init__(self, height=1, align="<", divider=' '):
@@ -222,11 +223,15 @@ class _BaseListBox(with_metaclass(ABCMeta, Widget)):
 		if isinstance(event, KeyboardEvent):
 			if len(self._options) > 0 and event.key_code == Screen.KEY_UP:
 				# Move up one line in text - use value to trigger on_select.
-				self._line = max(0, self._line - 1)
+				self._line = self._line - 1
+				if self._line < 0:
+					self._line = len(self._options) - 1
 				self.value = self._options[self._line][1]
 			elif len(self._options) > 0 and event.key_code == Screen.KEY_DOWN:
 				# Move down one line in text - use value to trigger on_select.
-				self._line = min(len(self._options) - 1, self._line + 1)
+				self._line = self._line + 1
+				if self._line > len(self._options) - 1:
+					self._line = 0
 				self.value = self._options[self._line][1]
 			elif len(self._options) > 0 and event.key_code == Screen.KEY_PAGE_UP:
 				# Move up one page.
@@ -480,7 +485,6 @@ class CustomMultiColumnListBox(_BaseListBox):
 
 	def _find_option(self, search_value):
 		for row, value in self._options:
-			# TODO: Should this be aware of a sort column?
 			if row[0].startswith(search_value):
 				return value
 		return None
@@ -618,11 +622,11 @@ class CustomMainPlaylistBox(CustomMultiColumnListBox):
 		self._options = resList
 
 def readable_mem(mem):
-    for suffix in ["", "K", "M", "G", "T"]:
-        if mem < 10000:
-            return "{}{}".format(int(mem), suffix)
-        mem /= 1024
-    return "{}P".format(int(mem))
+	for suffix in ["", "K", "M", "G", "T"]:
+		if mem < 10000:
+			return "{}{}".format(int(mem), suffix)
+		mem /= 1024
+	return "{}P".format(int(mem))
 
 class CustomFileBrowser(CustomMultiColumnListBox):
 	def __init__(self, height, root, config, 
@@ -645,6 +649,7 @@ class CustomFileBrowser(CustomMultiColumnListBox):
 
 		self._external_notification = on_select
 		self._root = root
+		self._rootSave = os.path.abspath(root)
 		self._in_update = False
 		self._initialized = False
 
@@ -689,7 +694,8 @@ class CustomFileBrowser(CustomMultiColumnListBox):
 
 		tree_view = []
 		if len(self._root) > len(os.path.abspath(os.sep)):
-			tree_view.append(([self.dirCh+".."], os.path.join(self._root, "..")))
+			if self._rootSave != self._root:
+				tree_view.append(([self.dirCh+".."], os.path.join(self._root, "..")))
 
 		tree_dirs = []
 		tree_files = []
@@ -698,8 +704,7 @@ class CustomFileBrowser(CustomMultiColumnListBox):
 			full_path = os.path.join(self._root, my_file)
 			details = os.stat(full_path)
 			if os.path.isdir(full_path):
-				tree_dirs.append(([self.dirCh+"{}".format(my_file),
-								   ""], full_path))
+				tree_dirs.append(([self.dirCh+"{}".format(my_file), ""], full_path))
 			else:
 				_, ext = filename, file_extension = os.path.splitext(full_path)
 				if ext.lower() in self.formats:
@@ -760,13 +765,28 @@ class CustomFrame(Frame):
 			i+=3
 
 	def swichWindow(self, presenter, event):
-		from asciimatics.exceptions import NextScene
+		from asciimatics.exceptions import NextScene, StopApplication
+		from gui.dialog_info import InfoDialog
+		#TODO: remove it from frames and uncomment this
+		#if event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
+		#		raise StopApplication("User quit")
 
 		for i, screenName in enumerate(presenter.config.screens):
 			if event.key_code in [ord(str(i + 1))]:
 				presenter.setFrameToBars(screenName)
+				if screenName == FRAME_LYRICS:
+					presenter.lyricsUpdateText()
+				if screenName == FRAME_ARTIST_INFO:
+					presenter.artistinfoUpdateText()
 				raise NextScene(screenName)
 		
+		#if event.key_code in [ord("i")]:
+		#	self._scene.add_effect(
+		#		InfoDialog(self._screen, 
+		#			"Info",
+		#			["OK"],
+		#			config=presenter.config, win=self.frameName))
+
 		#if event.key_code in [ord('1')]:
 		#	presenter.setFrameToBars("MainPlaylist")
 		#	raise NextScene("MainPlaylist")
@@ -1465,6 +1485,7 @@ class CustomVisualizer(Effect):
 		
 		#data
 		data = self.presenter.playerGetWaveData(param.is_stereo, self._screen.width)
+
 		if data == None:
 			return
 		self.channel = data["channel"]
@@ -2618,12 +2639,12 @@ class TextView(Widget):
 			if event.key_code == Screen.KEY_UP:
 				# Move up one line in text
 				self._line = max(0, self._line - 1)
-				if self._column >= len(self._value[self._line]):
+				if len(self._value) > 0 and self._column >= len(self._value[self._line]):
 					self._column = len(self._value[self._line])
 			elif event.key_code == Screen.KEY_DOWN:
 				# Move down one line in text
 				self._line = min(len(self._value) - 1, self._line + 1)
-				if self._column >= len(self._value[self._line]):
+				if len(self._value) > 0 and self._column >= len(self._value[self._line]):
 					self._column = len(self._value[self._line])
 			else:
 				# Ignore any other key press.

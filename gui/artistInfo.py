@@ -4,26 +4,28 @@ if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 from asciimatics.widgets import *
 
-from tag_controller import Tag, getTagFromPath
+from core.tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.dialog import AddMusicDialog
 from asciimatics.effects import Print, Clock
 from asciimatics.event import KeyboardEvent
-from gui.utils.utils import getColor, getAttr, ColorTheme
+from core.utils import getColor, getAttr, ColorTheme
 from gui.utils.widget import CustomFrame, TextView
 from asciimatics.renderers import Rainbow
 from gui.dialog_info import InfoDialog
 import asyncio
 from typing import NoReturn
 from asciimatics.screen import Screen
+from core.strings import FRAME_ARTIST_INFO
 
+#TODO: cache
 class ArtistInfoFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(ArtistInfoFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="ArtistInfo", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
-		self.dup = 0
-		self.ddown = 0
+			screen, screen.height, screen.width, has_border=False, name=FRAME_ARTIST_INFO, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
+		self.dup = len(upBar.layouts)
+		self.ddown = len(downBar.layouts)
 		self.artist = ""
 		
 		self.addUpBar()
@@ -32,12 +34,13 @@ class ArtistInfoFrame(CustomFrame):
 		self.add_layout(layout)
 		
 		self.addDownBar()
-		
-		c = config.artist_info.color.split(':')
+		c = presenter.config.artist_info.color.split(':')
 		tcolor = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
 		self.text = TextView(self.screen.height-self.dup-self.ddown, tcolor, name="bio")
 		layout.add_widget(self.text)
+
 		self.fix()
+		self.setPresenter(presenter)
 
 	def process_event(self, event):
 		if isinstance(event, KeyboardEvent):
@@ -56,17 +59,11 @@ class ArtistInfoFrame(CustomFrame):
 	
 	def setPresenter(self, p):
 		self.presenter = p
+		self.presenter.addFrame(self.frameName, self)
 
-	async def updateTextAsync(self, artist: str) -> NoReturn:
-		text = self.presenter.lastfmGetCurArtistBio()
-		if (self.artist == artist):
-			self.text.setText(text)
-		else:
-			asyncio.run(self.updateTextAsync(self.artist))
+	def setText(self, text):
+		self.text.setText(text)
 
-	def updateText(self):
+	def updateArtist(self):
 		if self.presenter != None and self.artist != self.presenter.playerGetCurTag().artist:
 			self.artist = self.presenter.playerGetCurTag().artist
-			#asyncio.run(self.updateTextAsync(self.artist))
-			loop = asyncio.get_event_loop()
-			loop.run_until_complete(self.updateTextAsync(self.artist))

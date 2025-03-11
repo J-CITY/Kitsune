@@ -7,21 +7,24 @@ from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 
 from gui.utils.widget import CustomFrame, CustomMultiColumnListBox, CustomText
-from gui.utils.utils import getAttr, ColorTheme, getColor
+from core.utils import getAttr, ColorTheme, getColor, MusicAddPolitics
 
-from tag_controller import Tag, getTagFromPath
+from core.tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.dialog import AddMusicDialog
-from gui.dialog import AddMusicDialog, ADD_END,ADD_BEGIN,ADD_AFTER,ADD_BEFORE
 from gui.dialog_download import DownloadDialog
-from strings import CURRENT_PLAYLIST
+from core.strings import CURRENT_PLAYLIST
 from gui.dialog_info import InfoDialog
 
+#TODO: search yandex music artist/album/song/playlist?
+#TODO: search local artist/album/song
+#TODO: create local favorite playlist
+
 class SearchFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(SearchFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Search", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name="Search", upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
 		self.curDbPlaylist = []
 		self.curScPlaylist = []
 
@@ -31,7 +34,7 @@ class SearchFrame(CustomFrame):
 		self.add_layout(textLayout)
 		textLayout.add_widget(Button("OK", on_click=self._search), 1)
 		
-		c = config.search.color.split(':')
+		c = presenter.config.search.color.split(':')
 		tcolor = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
 		self.searchText = CustomText(tcolor, label="Search:",
 				name="search_text",
@@ -41,14 +44,14 @@ class SearchFrame(CustomFrame):
 		layout = Layout([1,1], fill_frame=True)
 		self.add_layout(layout)
 
-		c = config.search.color.split(':')
+		c = presenter.config.search.color.split(':')
 		self.color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		c = config.search.color_choice.split(':')
+		c = presenter.config.search.color_choice.split(':')
 		self.color_choice = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		c = config.search.color_not_focus.split(':')
+		c = presenter.config.search.color_not_focus.split(':')
 		self.color_not_focus = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		titleDb = config.search.title_db
-		titleSc = config.search.title_sc
+		titleDb = presenter.config.search.title_db
+		titleSc = presenter.config.search.title_sc
 		
 		
 		self.listSearchDb = CustomMultiColumnListBox(
@@ -59,8 +62,8 @@ class SearchFrame(CustomFrame):
 			[],
 			titles=[titleDb],
 			name="SearchDb", on_select=self.addSong)
-		self.listSearchDb.choiceCh = config.search.choice_char
-		self.listSearchDb.itemCh = config.search.item_char
+		self.listSearchDb.choiceCh = presenter.config.search.choice_char
+		self.listSearchDb.itemCh = presenter.config.search.item_char
 		layout.add_widget(self.listSearchDb, 0)
 
 		self.listSearchSc = CustomMultiColumnListBox(
@@ -71,12 +74,13 @@ class SearchFrame(CustomFrame):
 			[],
 			titles=[titleSc],
 			name="SearchSc", on_select=self.addSong)
-		self.listSearchSc.choiceCh = config.search.choice_char
-		self.listSearchSc.itemCh = config.search.item_char
+		self.listSearchSc.choiceCh = presenter.config.search.choice_char
+		self.listSearchSc.itemCh = presenter.config.search.item_char
 		layout.add_widget(self.listSearchSc, 1)
 
 		self.addDownBar()
 		self.fix()
+		self.setPresenter(presenter)
 
 	def getCurTag(self):
 		e = None
@@ -110,10 +114,10 @@ class SearchFrame(CustomFrame):
 							title, 
 							["OK", "Cancel"], 
 							addList = [
-								("At the end of playlist", ADD_END),
-								("At the beginning of playlist", ADD_BEGIN),
-								("After current song", ADD_AFTER),
-								("Before current song", ADD_BEFORE)
+								("At the end of playlist", MusicAddPolitics.ADD_END),
+								("At the beginning of playlist", MusicAddPolitics.ADD_BEGIN),
+								("After current song", MusicAddPolitics.ADD_AFTER),
+								("Before current song", MusicAddPolitics.ADD_BEFORE)
 							],
 							playlistLists = pls,
 							needNewPlaylist = True,
@@ -121,36 +125,36 @@ class SearchFrame(CustomFrame):
 							needListPlaylists = True,
 							needPlayCb = True,
 							presenter=self.presenter, win=name))
-				if event.key_code in [ord('f')]:
+				if event.key_code in [ord('f')]:#TODO
 					if self.listSearchSc._has_focus:
 						if len(self.curScPlaylist) > 0:
 							id = self.getCurTag().globalId
-							self.presenter.scLike(id)
-				if event.key_code in [ord('l')]:
+							#self.presenter.scLike(id)
+				if event.key_code in [ord('l')]:#TODO
 					if self.listSearchSc._has_focus:
 						e = self.getCurTag()
-						if e != None:
-							url = e.url
-							name = e.fileName
-							name = name.replace("\"", "")
-							fpath = self.presenter.config.download_folder + "/" + name + ".mp3"
-							self.presenter.scDownloadName(url, fpath, name)
-							self.presenter.dbInsertByPath(fpath)
-							self.presenter.medialibUpdate()
-							tag = getTagFromPath(fpath)
-							self.presenter.mainPlaylistAddSong(ADD_END, False, "current", tag)
-				if event.key_code in [ord('L')]:
+						#if e != None:
+						#	url = e.url
+						#	name = e.fileName
+						#	name = name.replace("\"", "")
+						#	fpath = self.presenter.config.download_folder + "/" + name + ".mp3"
+						#	self.presenter.scDownloadName(url, fpath, name)
+						#	self.presenter.dbInsertByPath(fpath)
+						#	self.presenter.medialibUpdate()
+						#	tag = getTagFromPath(fpath)
+						#	self.presenter.mainPlaylistAddSong(ADD_END, False, "current", tag)
+				if event.key_code in [ord('L')]:#TODO
 					if self.listSearchSc._has_focus:
 						e = self.getCurTag()
-						if e != None:
-							url = e.url
-							name = e.fileName
-							name = name.replace("\"", "")
-							self._scene.add_effect(
-								DownloadDialog(self._screen, 
-									"Download song", url, name+".mp3",
-									["OK", "Cancel"],
-									presenter=self.presenter, win="download_sc"))
+						#if e != None:
+						#	url = e.url
+						#	name = e.fileName
+						#	name = name.replace("\"", "")
+						#	self._scene.add_effect(
+						#		DownloadDialog(self._screen, 
+						#			"Download song", url, name+".mp3",
+						#			["OK", "Cancel"],
+						#			presenter=self.presenter, win="download_sc"))
 				if event.key_code in [ord("i")]:
 					self._scene.add_effect(
 						InfoDialog(self._screen, 
@@ -171,14 +175,12 @@ class SearchFrame(CustomFrame):
 		return
 
 	def addSong(self, play=True):
-		#e = self.curPlaylist[self.listSongs._line]
-		#self.presenter.mainPlaylistAddSong(ADD_END, play, "current", e)
 		if self.listSearchDb._has_focus:
 			e = self.curDbPlaylist[self.listSearchDb._line]
-			self.presenter.mainPlaylistAddSong(ADD_END, play, "current", e)
+			self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, play, "current", e)
 		if self.listSearchSc._has_focus:
 			e = self.curScPlaylist[self.listSearchSc._line]
-			self.presenter.mainPlaylistAddSong(ADD_END, play, "current", e)
+			self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, play, "current", e)
 		return
 
 	def _search(self):
@@ -207,33 +209,35 @@ class SearchFrame(CustomFrame):
 		self.listSearchDb.value = 0
 
 		#search sc
-		if self.presenter.config.useInternet:
-			res = self.presenter.scSearch(searchText)
-			res = self.presenter.scSearch(searchText)
-			self.curScPlaylist = []
-			_curPlaylist = []
-			for i, a in enumerate(res):
-				_curPlaylist.append(([a.title], i))
-				artist = song = a.title
-				data = a.title.split(" - ")
-				if len(data) < 2:
-					pass
-				else:
-					artist = data[0].strip()
-					song = data[1].strip()
-				tag = Tag()
-				tag.artist = artist
-				tag.album = ""
-				tag.song = song
-				tag.url = self.presenter.scGetStream(a.stream_url).location
-				tag.year = a.release_year
-				tag.genre = a.genre
-				tag.coverart = ""
-				tag.globalId = a.id
-				tag.fileName = a.title
-				self.curScPlaylist.append(tag)
-			self.listSearchSc._options = _curPlaylist
-			self.listSearchSc.value = 0
+		#if self.presenter.config.useInternet:
+		#	res = self.presenter.scSearch(searchText)
+		#	res = self.presenter.scSearch(searchText)
+		#	self.curScPlaylist = []
+		#	_curPlaylist = []
+		#	for i, a in enumerate(res):
+		#		_curPlaylist.append(([a.title], i))
+		#		artist = song = a.title
+		#		data = a.title.split(" - ")
+		#		if len(data) < 2:
+		#			pass
+		#		else:
+		#			artist = data[0].strip()
+		#			song = data[1].strip()
+		#		tag = Tag()
+		#		tag.artist = artist
+		#		tag.album = ""
+		#		tag.song = song
+		#		tag.url = self.presenter.scGetStream(a.stream_url).location
+		#		tag.year = a.release_year
+		#		tag.genre = a.genre
+		#		tag.coverart = ""
+		#		tag.globalId = a.id
+		#		tag.fileName = a.title
+		#		self.curScPlaylist.append(tag)
+		#	self.listSearchSc._options = _curPlaylist
+		#	self.listSearchSc.value = 0
 
 	def setPresenter(self, p):
 		self.presenter = p
+		self.presenter.addFrame(self.frameName, self)
+

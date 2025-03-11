@@ -5,15 +5,15 @@ if parentPath not in sys.path:
 from asciimatics.widgets import *
 
 from gui.utils.widget import CustomFileBrowser
-from tag_controller import getTagFromPath
-from gui.dialog import ADD_END
-from gui.utils.utils import ColorTheme, getColor, getAttr, ADD_END, ADD_BEGIN, ADD_AFTER, ADD_BEFORE
+from core.tag_controller import getTagFromPath
+from core.utils import ColorTheme, getColor, getAttr, MusicAddPolitics
 from gui.utils.widget import CustomText
 from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
+from core.strings import CURRENT_PLAYLIST
+from functools import partial
 
 class DownloadDialog(Frame):
-
 	def __init__(self, screen, text, url, fname, buttons, 
 			presenter=None, on_close=None, has_shadow=False,
 			win=""):
@@ -86,7 +86,7 @@ class DownloadDialog(Frame):
 			self.presenter.medialibUpdate()
 			if self.addCurCb.value:
 				tag = getTagFromPath(fpath)
-				self.presenter.mainPlaylistAddSong(ADD_END, self.playCb.value, "current", tag)
+				self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, self.playCb.value, CURRENT_PLAYLIST, tag)
 			
 		self._scene.remove_effect(self)
 		if self._on_close:

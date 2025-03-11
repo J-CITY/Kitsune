@@ -4,32 +4,33 @@ if parentPath not in sys.path:
 	sys.path.insert(0, parentPath)
 
 from core.tag_controller import *
+from core.strings import SONG_FORMATS
 import sqlite3
 import os
 
 class Database:
 	def __init__(self, musicPath):
 		self.PATH = musicPath
-		self.dbName = 'lib.db'
+		self.dbPath = 'assets/lib.db'
 		self.tableName = 'medialib'
 		self.create()
-		
+
 	def walk(self):
 		for top, dirs, files in os.walk(self.PATH):
 			for nm in files:
 				#print(os.path.join(top, nm))
 				file = os.path.join(top, nm)
 				filename, file_extension = os.path.splitext(file)
-				if file_extension.lower() in ['.wav', '.flac', '.mp3']:
+				if file_extension.lower() in SONG_FORMATS:
 					res = getTagFromPath(file)
 					if res != None:
 						self.insert(res)
-	
-	def create(self):
-		self.conn = sqlite3.connect(self.dbName)
-		self.cursor = self.conn.cursor()
 
-		self.cursor.execute("""CREATE TABLE IF NOT EXISTS """ + self.tableName + """ 
+	def create(self):
+		self.conn = sqlite3.connect(self.dbPath, check_same_thread=False)
+		#self.cursor = self.conn.cursor()
+		cursor = self.conn.cursor()
+		cursor.execute("""CREATE TABLE IF NOT EXISTS """ + self.tableName + """ 
 		(artist TEXT,
 		album TEXT,
 		song TEXT,
@@ -38,23 +39,37 @@ class Database:
 		genre TEXT,
 		coverart TEXT)
 		""")
-		
+		cursor.close()
+
+	def close(self):
+		self.conn.close()
+		#self.cursor.close()
+
+	def open(self):
+		self.conn = sqlite3.connect(self.dbPath)
+		#self.cursor.close()
+
 	def insert(self, tag):
+		cursor = self.conn.cursor()
 		#print(tag.url)
-		self.cursor.execute("""INSERT INTO """+self.tableName+"""
-			VALUES (?,?,?,?,?,?,?)""", 
-			(tag.artist,
-			tag.album,
-			tag.song,
-			tag.url,
-			str(tag.year),
-			tag.genre,
-			tag.coverart))
+		artists = tag.artist.split(",")
+		for artist in artists:
+			cursor.execute("""INSERT INTO """+self.tableName+"""
+				VALUES (?,?,?,?,?,?,?)""", 
+				(artist,
+				tag.album,
+				tag.song,
+				tag.url,
+				str(tag.year),
+				tag.genre,
+				tag.coverart))
 		self.conn.commit()
+		cursor.close()
 
 	def insertByPath(self, path):
 		tag = getTagFromPath(path)
-		self.cursor.execute("""INSERT INTO """+self.tableName+"""
+		cursor = self.conn.cursor()
+		cursor.execute("""INSERT INTO """+self.tableName+"""
 			VALUES (?,?,?,?,?,?,?)""", 
 			(tag.artist,
 			tag.album,
@@ -64,27 +79,40 @@ class Database:
 			tag.genre,
 			tag.coverart))
 		self.conn.commit()
-		
-		
+		cursor.close()
+
 	def insertMany(self, data):
-		self.cursor.executemany("INSERT INTO albums VALUES (?,?,?,?,?,?,?)", data)
+		cursor = self.conn.cursor()
+		cursor.executemany("INSERT INTO albums VALUES (?,?,?,?,?,?,?)", data)
 		self.conn.commit()
-	
+		cursor.close()
+
 	def selectDistinct(self, col):
-		self.cursor.execute("SELECT DISTINCT " + col + " FROM " + self.tableName)
-		
-		return self.cursor.fetchall()
+		cursor = self.conn.cursor()
+		cursor.execute("SELECT DISTINCT " + col + " FROM " + self.tableName)
+		res = cursor.fetchall()
+		cursor.close()
+		return res
 
 	def select(self, e):
-		self.cursor.execute(e)
-		return self.cursor.fetchall()
+		cursor = self.conn.cursor()
+		cursor.execute(e)
+		res = cursor.fetchall()
+		cursor.close()
+		return res
 
 	def execute(self, text, params=()):
-		self.cursor.execute(text, params)
-		return self.cursor.fetchall()
+		cursor = self.conn.cursor()
+		cursor.execute(text, params)
+		res = cursor.fetchall()
+		cursor.close()
+		return res
 
 	def search(self, text):
-		self.cursor.execute("SELECT * FROM "+self.tableName+
+		cursor = self.conn.cursor()
+		cursor.execute("SELECT * FROM "+self.tableName+
 			" WHERE artist LIKE ? OR album LIKE ? OR song LIKE ? OR genre LIKE ?",
 			(text, text, text, text))
-		return self.cursor.fetchall()
+		res = cursor.fetchall()
+		cursor.close()
+		return res

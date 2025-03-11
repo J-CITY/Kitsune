@@ -5,6 +5,8 @@ import asyncio, threading
 import collections
 from core.db import *
 from core.player import Player
+from core.lyricsWiki import LyricsWiki
+from core.lastfm_client import Lastfm
 try:
 	from Pyro5.api import expose, oneway, serve, Daemon, locate_ns
 	from pybass.pybass import *
@@ -38,31 +40,51 @@ def initConfig():
 
 def initDirs(config):
 	import pathlib
-	pathlib.Path(config.cache_folder).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(config.cache_folder).mkdir(parents=True, exist_ok=True)
+	pathlib.Path(config.download_folder).mkdir(parents=True, exist_ok=True)
 	pathlib.Path(config.playlist_folder).mkdir(parents=True, exist_ok=True)
 
 def initDb(config):
-	db = Database(config.music_root_dir)
+	db = Database(config.music_root_folder)
 	return db
 
+def initLyrics(config):
+	lyrics = LyricsWiki(config.lirycs.apikey)
+	return lyrics
+
+def initLastfm(config):
+	lastfm = Lastfm(config.lastfm.apikey)
+	return lastfm
 
 config = initConfig()
 initDirs(config)
 db = initDb(config)
 player = Player(config)
+lyrics = initLyrics(config)
+lastfm = initLastfm(config)
+
+def playerUpdate():
+	player.update()
+
 
 class CallbackServer(object):
 	def __init__(self):
-		threadPlayer = threading.Thread(target=self.playerUpdate)
-		threadPlayer.daemon = True
-		threadPlayer.start()
-
-	def playerUpdate(self):
-		player.update()
+		pass
+		#threadPlayer = threading.Thread(target=self.playerUpdate)
+		#threadPlayer.daemon = True
+		#threadPlayer.start()
 
 	@expose
+	@oneway
 	def updateDb(self, callback):
-		#TODO delete old db if exist
+		global db
+		# remove old db
+		path = db.dbPath
+		db = None
+		os.remove(path)
+		# create new db
+		db = initDb(config)
+		# fill
 		db.walk()
 		log(LogLevel.INFO, "Database is updated")
 		callback._pyroClaimOwnership()
@@ -112,7 +134,7 @@ class CallbackServer(object):
 
 	@expose
 	def getVolume(self):
-		print("volume")
+		#print("volume")
 		return player.getVolume()
 
 	@expose
@@ -134,7 +156,12 @@ class CallbackServer(object):
 	@oneway
 	def move(self, val):
 		return player.move(val)
-	
+
+	@expose
+	@oneway
+	def moveDirection(self, val):
+		return player.moveDirection(val)
+
 	@expose
 	def getCurrentSong(self):
 		return player.getTag()
@@ -145,7 +172,7 @@ class CallbackServer(object):
 
 	@expose
 	def changeMode(self):
-		player.mode = (player.mode+1) % 5
+		player.nextMode()
 
 	@expose
 	def getMode(self):
@@ -203,12 +230,6 @@ class CallbackServer(object):
 		tag.length = player.getLen()
 		return tag
 
-	# TODO: think this is should delete
-	@expose
-	@oneway
-	def playerSetPlaylistId(self, id):
-		player.playlistId = id
-
 	@expose
 	def playerSwap(self, _from, _to):
 		if _from == _to:
@@ -250,7 +271,7 @@ class CallbackServer(object):
 		return player.getLen()
 
 	@expose
-	def playerSetCurrentPlaylist(self, pl):
+	def playerSetCurrentPlaylistTracks(self, pl):
 		player.playlist.tracks = pl
 	
 	@expose
@@ -263,13 +284,121 @@ class CallbackServer(object):
 		return arr
 
 	@expose
+	def getPlaylistDir(self):
+		return config.playlist_folder
+
+	@expose
+	def getUseInternet(self):
+		return config.use_internet
+
+	@expose
+	def getMusicRootDir(self):
+		return config.music_root_folder
+
+	@expose
+	def getDownloadDir(self):
+		return config.download_folder
+
+	@expose
+	def getCacheDir(self):
+		return config.cache_folder
+
+	@expose
+	def dbSelect(self, query):
+		return db.select(query)
+
+	@expose
+	def dbSearch(self, query):
+		return db.search(query)
+
+	@expose
+	def dbExecute(self, text, params):
+		return db.execute(text, params)
+
+	@expose
+	def dbInsertByPath(self, query):
+		return db.insertByPath(query)
+
+	@expose
 	@oneway
-	def setUpdatePlayerItemCb(self, cb):
-		#cb._pyroClaimOwnership()
-		#print(2)
-		#cb.updatePlayerItemCb()
-		#print(3)
-		player.setUpdatePlayerItemCb(cb)
+	def eqSetEqParams(self):
+		player.setEqParams()
+
+	@expose
+	@oneway
+	def eqSetLevelParam(self, param):
+		player.setEqLevelParam(param)
+		player.setEqParams()
+
+	@expose
+	@oneway
+	def eqSetSpeedParam(self ,param):
+		player.setEqSpeedParam(param)
+		player.setEqParams()
+
+	@expose
+	@oneway
+	def eqSetBassParam(self, param):
+		player.setEqBass(param)
+		player.setEqParams()
+
+	@expose
+	@oneway
+	def eqSetEchoParam(self, param):
+		player.setEqEcho(param)
+		player.setEqParams()
+
+	@expose
+	@oneway
+	def eqSetChorusParam(self, param):
+		player.setEqChorus(param)
+		player.setEqParams()
+
+	@expose
+	@oneway
+	def eqSetFlangeParam(self, param):
+		player.setEqFlange(param)
+		player.setEqParams()
+
+	@expose
+	@oneway
+	def eqSetReverbParam(self, param):
+		player.setEqReverb(param)
+		player.setEqParams()
+
+	@expose
+	def playerGetWaveData(self, isSterio, col):
+		return player.getWaveData(isSterio, col)
+
+	@expose
+	def playerGetFFTData(self, isSterio, col):
+		return player.getFFTData(isSterio, col)
+
+	@expose
+	def lyricsGetSongLyrics(self, artist, song):
+		if lyrics is None:
+			return ""
+		if artist == "" or song == "":
+			return ""
+		#if not config.use_internet:
+		#	return ""
+		print("lirics:", artist, song)
+		text = lyrics.getLyrics(artist, song)
+		print(text)
+		return text
+
+	@expose
+	def lastfmGetArtistBio(self, artist):
+		if lastfm is None:
+			return ""
+		if artist == "":
+			return ""
+		#if not config.use_internet:
+		#	return ""
+		text = lastfm.getArtistBio(artist)
+		return text
+
+
 
 #daemon = Daemon()
 #ns = locate_ns()
@@ -277,6 +406,16 @@ class CallbackServer(object):
 #ns.register("example.callback", uri)
 #print("Ready.")
 #daemon.requestLoop()
+
+from Pyro5.api import register_dict_to_class, register_class_to_dict
+register_class_to_dict(Playlist, playlist_class_to_dict)
+register_dict_to_class("core.tag_controller.Playlist", playlist_dict_to_class)
+register_class_to_dict(Tag, tag_class_to_dict)
+register_dict_to_class("core.tag_controller.Tag", tag_dict_to_class)
+
+threadPlayer = threading.Thread(target=playerUpdate)
+threadPlayer.daemon = True
+threadPlayer.start()
 
 serve({
 	CallbackServer: "kitsune.music.daemon"

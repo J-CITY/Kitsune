@@ -6,15 +6,15 @@ from asciimatics.exceptions import ResizeScreenError
 from collections import namedtuple
 from gui.bar import *
 from gui.mainplaylist import *
-#from gui.browser import *
-#from gui.clock import *
-#from gui.equalizer import *
-#from gui.playlists import *
-#from gui.visualization import *
-#from gui.medialib import *
-#from gui.artistInfo import *
-#from gui.lyrics import *
-#from gui.search import *
+from gui.browser import *
+from gui.medialib import *
+from gui.clock import *
+from gui.equalizer import *
+from gui.playlists import *
+from gui.visualization import *
+from gui.search import *
+from gui.artistInfo import *
+from gui.lyrics import *
 from gui.presenter import *
 from core.strings import *
 
@@ -33,9 +33,6 @@ def init(screen, oldScene):
 	downBar = Bar()
 	downBar.parse(config, DOWN_BAR)
 
-	#browser = BrowserFrame(screen, upBar, downBar, config)
-	#browser.setPresenter(presenter)
-	#
 	#medialib = MedialibFrame(screen, upBar, downBar, config)
 	#medialib.setPresenter(presenter)
 	#
@@ -57,16 +54,16 @@ def init(screen, oldScene):
 	presenter.setUpBar(upBar)
 	presenter.setDownBar(downBar)
 
-
 	if FRAME_MAIN_PLAYLIST not in config.screens:
 		log(LogLevel.ERROR, "Screen 'MainPlaylist' must be in config.screens")
 		exit(1)
 
 	screens = []
 	for screenName in config.screens:
-		s = eval(screenName + 'Frame')(screen, upBar, downBar, config)
-		s.setPresenter(presenter)
+		s = eval(screenName + 'Frame')(screen, upBar, downBar, presenter)
 		screens.append(Scene([s], -1, name=screenName))
+
+	presenter.setFrameToBars('MainPlaylist')
 
 	screen.play(screens, stop_on_resize=True, start_scene=oldScene)
 

@@ -7,21 +7,22 @@ from asciimatics.event import KeyboardEvent
 from asciimatics.screen import Screen
 
 from gui.utils import *
-from tag_controller import Tag, getTagFromPath
+from core.tag_controller import Tag, getTagFromPath
 from asciimatics.exceptions import ResizeScreenError, StopApplication, NextScene
 
 from gui.dialog import AddMusicDialog
 from asciimatics.effects import Print, Clock
 from gui.dialog_info import InfoDialog
-from gui.utils.utils import getColor, getAttr
+from core.utils import getColor, getAttr
 from gui.utils.widget import CustomVisualizer, CustomFrame, CustomFigletText
 from asciimatics.renderers import Rainbow
 from asciimatics.effects import Wipe
+from core.strings import FRAME_VISUALIZER
 
 class VisualizationFrame(CustomFrame):
-	def __init__(self, screen, upBar, downBar, config):
+	def __init__(self, screen, upBar, downBar, presenter):
 		super(VisualizationFrame, self).__init__(
-			screen, screen.height, screen.width, has_border=False, name="Visualizer", upBar=upBar, downBar=downBar, bg=getColor(config.bg_color))
+			screen, screen.height, screen.width, has_border=False, name=FRAME_VISUALIZER, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
 		
 		self.addUpBar()
 
@@ -30,12 +31,13 @@ class VisualizationFrame(CustomFrame):
 
 		self.addDownBar()
 
-		self.bgColor = getColor(config.clock.bg_color)
-		self.viz = CustomVisualizer(self._canvas, config, self.dup, 
-			self.ddown, color = "rainbow_p", bg=getColor(config.bg_color))
+		self.bgColor = getColor(presenter.config.clock.bg_color)
+		self.viz = CustomVisualizer(self._canvas, presenter.config, self.dup, 
+			self.ddown, color = "rainbow_p", bg=getColor(presenter.config.bg_color))
 		self.add_effect(self.viz)
 
 		self.fix()
+		self.setPresenter(presenter)
 
 	def process_event(self, event):
 		if isinstance(event, KeyboardEvent):
@@ -58,6 +60,7 @@ class VisualizationFrame(CustomFrame):
 	def setPresenter(self, p):
 		self.presenter = p
 		self.viz.setPresenter(p)
+		self.presenter.addFrame(self.frameName, self)
 
 	def _clear(self):
 		pass
