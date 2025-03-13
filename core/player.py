@@ -143,7 +143,9 @@ class Player:
 		if (len(self.playlist.tracks) > self.playlistId):
 			return self.playlist.tracks[self.playlistId]
 		else:
-			return None
+			# I think this is impossible
+			log(LogLevel.ERROR, "Player.getTag: cant get tag")
+			return Tag()
 
 	def destructor(self):
 		for s in self.streams:
@@ -153,8 +155,9 @@ class Player:
 	def playOnline(self):
 		trackUrl = None
 		if self.getYandexMusicUrlCb:
+			print('try get url')
 			trackUrl = self.getYandexMusicUrlCb(self.playlist.tracks[self.playlistId].globalId)
-		#print(trackUrl)
+		print('url', trackUrl)
 		if trackUrl is not None:
 			fxch = BASS_StreamCreateURL(trackUrl.encode("utf-8"), False, BASS_STREAM_DECODE, DOWNLOADPROC(), 0)
 			self.streams[self.streamsId] = self.BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
@@ -169,7 +172,7 @@ class Player:
 		if len(self.playlist.tracks) > self.playlistId:
 			track = self.playlist.tracks[self.playlistId]
 			_url = track.url
-
+		print('type', track.type)
 		#BASS_ChannelStop(self.streams[self.streamsId])
 		#BASS_StreamFree
 		if _url.startswith('http') or _url.startswith('ftp'):
@@ -414,15 +417,16 @@ class Player:
 		BASS_ChannelGetData(self.streams[self.streamsId], buf, (ci.chans * col * 4) | BASS_DATA_FLOAT)
 
 		arr = np.ctypeslib.as_array(buf)
+
 		return {
-			"data": arr.shape,
+			"data": arr.tolist(),
 			"channel": channel
 		}
 
 	def getFFTData(self, isStereo):
 		import numpy as np
-		fft = (ctypes.c_float*1024)()
-		BASS_ChannelGetData(self.streams[self.streamsId], fft, BASS_DATA_FFT2048)
+		buf = (ctypes.c_float*1024)()
+		BASS_ChannelGetData(self.streams[self.streamsId], buf, BASS_DATA_FFT2048)
 		arr = np.ctypeslib.as_array(buf)
 		return {
 			"data": arr.shape,

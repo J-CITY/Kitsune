@@ -7,6 +7,7 @@ from core.db import *
 from core.player import Player
 from core.lyricsWiki import LyricsWiki
 from core.lastfm_client import Lastfm
+from core.yandexMusicClient import YandexMusicClient
 try:
 	from Pyro5.api import expose, oneway, serve, Daemon, locate_ns
 	from pybass.pybass import *
@@ -56,12 +57,18 @@ def initLastfm(config):
 	lastfm = Lastfm(config.lastfm.apikey)
 	return lastfm
 
+def initYandexMusic(config):
+	ym = YandexMusicClient(config.yandex_music.token)
+	player.setGetYandexMusicUrlCb(ym.getTrackUrl)
+	return ym
+
 config = initConfig()
 initDirs(config)
 db = initDb(config)
 player = Player(config)
 lyrics = initLyrics(config)
 lastfm = initLastfm(config)
+yaMusic = initYandexMusic(config)
 
 def playerUpdate():
 	player.update()
@@ -272,6 +279,7 @@ class CallbackServer(object):
 
 	@expose
 	def playerSetCurrentPlaylistTracks(self, pl):
+		print('playerSetCurrentPlaylistTracks',pl[-1].type)
 		player.playlist.tracks = pl
 	
 	@expose
@@ -375,16 +383,18 @@ class CallbackServer(object):
 		return player.getFFTData(isSterio, col)
 
 	@expose
-	def lyricsGetSongLyrics(self, artist, song):
-		if lyrics is None:
-			return ""
+	def lyricsGetSongLyrics(self, artist, song, ymId=None):
 		if artist == "" or song == "":
-			return ""
-		#if not config.use_internet:
-		#	return ""
-		print("lirics:", artist, song)
-		text = lyrics.getLyrics(artist, song)
-		print(text)
+			return ''
+
+		text = ''
+		if ymId and yaMusic:
+			text = yaMusic.getLyrics(ymId)
+			if len(text > 0):
+				return text
+
+		if lyrics:
+			text = lyrics.getLyrics(artist, song)
 		return text
 
 	@expose
@@ -397,7 +407,72 @@ class CallbackServer(object):
 		#	return ""
 		text = lastfm.getArtistBio(artist)
 		return text
+	
+	@expose
+	def lastfmGetCover(self, artist, song, ymId = None):
+		if artist == '' or song == '':
+			return ''
+		path = ''
+		if ymId and yaMusic:
+			path = yaMusic.saveCover(ymId)
+			if len(path > 0):
+				return path
+		if lastfm:
+			path = lastfm.saveAlbumArt(artist, song)
+		return path
 
+	@expose
+	def yandexMusicGetFavorites(self):
+		if yaMusic is None:
+			return ""
+		return yaMusic.getFavorite()
+
+	@expose
+	def yandexMusicGetPlaylists(self):
+		if yaMusic is None:
+			return []
+		return yaMusic.getPlaylists()
+
+	@expose
+	def yandexMusicGetPlaylist(self, name):
+		if yaMusic is None:
+			return None
+		return yaMusic.getPlaylist(name)
+
+	@expose
+	def yandexMusicGetMusicTrack(self, id):
+		if yaMusic is None:
+			return None
+		return yaMusic.getTrack(id)
+
+	@expose
+	def yandexMusicGetTracks(self, ids):
+		if yaMusic is None:
+			return []
+		print("yandexMusicGetTracks")
+		return yaMusic.getTracks(ids)
+
+	@expose
+	def yandexMusicGetTrackUrl(self, id):
+		if yaMusic is None:
+			return None
+		return yaMusic.getTrackUrl(id)
+
+	@expose
+	def yandexMusicIsInit(self):
+		if yaMusic is None:
+			return False
+		return yaMusic.isInitial()
+	
+	@expose
+	@oneway
+	def yandexMusicDownloadTrack(self, id):
+		if yaMusic is None:
+			return
+		path = yaMusic.downloadTrack(id, config.download_folder)
+		if len(path) > 0:
+			# Add to medialib
+			db.insertByPath(path)
 
 
 #daemon = Daemon()
@@ -416,6 +491,8 @@ register_dict_to_class("core.tag_controller.Tag", tag_dict_to_class)
 threadPlayer = threading.Thread(target=playerUpdate)
 threadPlayer.daemon = True
 threadPlayer.start()
+
+#print(yaMusic.getPlaylists())
 
 serve({
 	CallbackServer: "kitsune.music.daemon"

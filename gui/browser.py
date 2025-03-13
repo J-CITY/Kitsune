@@ -47,7 +47,8 @@ class BrowserFrame(CustomFrame):
 			if event.key_code in [ord('e')]:
 				song = self.browser.value
 				tag = getTagFromPath(song)
-				self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, False, CURRENT_PLAYLIST, tag)
+				if tag is not None:
+					self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, False, CURRENT_PLAYLIST, tag)
 			if event.key_code in [ord('E')]:
 				pls = [(CURRENT_PLAYLIST, 0)] + \
 					[(e, i+1) for i, e in enumerate(self.presenter.getListOfPlaylists())]

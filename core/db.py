@@ -68,6 +68,9 @@ class Database:
 
 	def insertByPath(self, path):
 		tag = getTagFromPath(path)
+		if tag is None:
+			log(LogLevel.ERROR, "cant get tag", path)
+			return
 		cursor = self.conn.cursor()
 		cursor.execute("""INSERT INTO """+self.tableName+"""
 			VALUES (?,?,?,?,?,?,?)""", 

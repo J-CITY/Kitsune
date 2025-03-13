@@ -22,7 +22,7 @@ class TrackType(IntEnum):
 class Tag:
 	def __init__(self):
 		self.type: TrackType = TrackType.LOCAL
-		self.url: str = ''
+		self.url: str = '' #TODO: del it
 		self.artist: str = ''
 		self.album: str = ''
 		self.song: str = ''
@@ -34,9 +34,12 @@ class Tag:
 		self.curLength: int = 0
 		self.id: int = -1
 		self.globalId: Union[str, int] = -1 #for streamings SC and YM
+		self.ymCoverUrl = None
+		self.ymHasLyrics = False
 
 	def get(self, param):
 		return {
+			'type': self.type,
 			'url': self.url,
 			'artist': self.artist,
 			'album': self.album,
@@ -48,7 +51,9 @@ class Tag:
 			'length': self.length,
 			'curLength': self.curLength,
 			'id': self.id,
-			'globalId': self.globalId
+			'globalId': self.globalId,
+			'ymCoverUrl': self.ymCoverUrl,
+			'ymHasLyrics': self.ymHasLyrics
 		}[param]
 
 class Playlist:
@@ -58,6 +63,47 @@ class Playlist:
 
 	def getSize(self):
 		return len(self.tracks)
+
+def tag_class_to_dict(obj):
+	#print("{serializer hook, converting to dict: %s}" % obj)
+	return {
+		"__class__": "core.tag_controller.Tag",
+		'type': obj.type,
+		'url': obj.url,
+		'artist': obj.artist,
+		'album': obj.album,
+		'song': obj.song,
+		'fileName': obj.fileName,
+		'year': obj.year,
+		'genre': obj.genre,
+		'coverart': obj.coverart,
+		'length': obj.length,
+		'curLength': obj.curLength,
+		'id': obj.id,
+		'globalId': obj.globalId,
+		'ymCoverUrl': obj.ymCoverUrl,
+		'ymHasLyrics': obj.ymHasLyrics
+	}
+
+def tag_dict_to_class(classname, d):
+	#print("{deserializer hook, converting to class: %s}" % d)
+	p = Tag()
+	p.type = d['type']
+	p.url = d['url']
+	p.artist = d['artist']
+	p.album = d['album']
+	p.song = d['song']
+	p.fileName = d['fileName']
+	p.year = d['year']
+	p.genre = d['genre']
+	p.coverart = d['coverart']
+	p.length = d['length']
+	p.curLength = d['curLength']
+	p.id = d['id']
+	p.globalId = d['globalId']
+	p.ymCoverUrl = d['ymCoverUrl']
+	p.ymHasLyrics = d['ymHasLyrics']
+	return p
 
 def playlist_class_to_dict(obj):
 	#print("{serializer hook, converting to dict: %s}" % obj)
@@ -71,42 +117,8 @@ def playlist_dict_to_class(classname, d):
 	#print("{deserializer hook, converting to class: %s}" % d)
 	p = Playlist()
 	p.name = d["name"]
-	p.tracks = d["tracks"]
-	return p
-
-def tag_class_to_dict(obj):
-	#print("{serializer hook, converting to dict: %s}" % obj)
-	return {
-		"__class__": "core.tag_controller.Tag",
-		'url': obj.url,
-		'artist': obj.artist,
-		'album': obj.album,
-		'song': obj.song,
-		'fileName': obj.fileName,
-		'year': obj.year,
-		'genre': obj.genre,
-		'coverart': obj.coverart,
-		'length': obj.length,
-		'curLength': obj.curLength,
-		'id': obj.id,
-		'globalId': obj.globalId
-	}
-
-def tag_dict_to_class(classname, d):
-	#print("{deserializer hook, converting to class: %s}" % d)
-	p = Tag()
-	p.url = d['url']
-	p.artist = d['artist']
-	p.album = d['album']
-	p.song = d['song']
-	p.fileName = d['fileName']
-	p.year = d['year']
-	p.genre = d['genre']
-	p.coverart = d['coverart']
-	p.length = d['length']
-	p.curLength = d['curLength']
-	p.id = d['id']
-	p.globalId = d['globalId']
+	for e in d["tracks"]:
+		p.tracks.append(tag_dict_to_class("core.tag_controller.Tag", e))
 	return p
 
 def getTagFromPath(path: str) -> Tag|None:
@@ -169,7 +181,9 @@ def savePlaylist(playlist: Playlist, path: str):
 			'curLength': t.curLength if t.curLength != None else 0,
 			'id': i,
 			'globalId': t.globalId,
-			"type": int(t.type)
+			"type": int(t.type),
+			"ymCoverUrl": t.ymCoverUrl if t.ymCoverUrl != None else '',
+			"ymHasLyrics": t.ymHasLyrics,
 		}
 		#print(_t)
 		saveList.append(_t)
@@ -208,6 +222,8 @@ def loadPlaylist(path: str) -> Playlist:
 			t.curLength = e.curLength
 			t.id = e.id
 			t.globalId = e.globalId
+			t.ymCoverUrl = e.ymCoverUrl if e.ymCoverUrl != '' else None,
+			t.ymHasLyrics = e.ymHasLyrics,
 			t.type = TrackType(e.type)
 			res.append(t)
 

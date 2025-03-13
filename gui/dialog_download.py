@@ -86,7 +86,8 @@ class DownloadDialog(Frame):
 			self.presenter.medialibUpdate()
 			if self.addCurCb.value:
 				tag = getTagFromPath(fpath)
-				self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, self.playCb.value, CURRENT_PLAYLIST, tag)
+				if tag is not None:
+					self.presenter.mainPlaylistAddSong(MusicAddPolitics.ADD_END, self.playCb.value, CURRENT_PLAYLIST, tag)
 			
 		self._scene.remove_effect(self)
 		if self._on_close:

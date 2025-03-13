@@ -39,6 +39,8 @@ class ArtistInfoFrame(CustomFrame):
 		self.text = TextView(self.screen.height-self.dup-self.ddown, tcolor, name="bio")
 		layout.add_widget(self.text)
 
+		self.cahe = {}
+
 		self.fix()
 		self.setPresenter(presenter)
 
@@ -67,3 +69,8 @@ class ArtistInfoFrame(CustomFrame):
 	def updateArtist(self):
 		if self.presenter != None and self.artist != self.presenter.playerGetCurTag().artist:
 			self.artist = self.presenter.playerGetCurTag().artist
+
+		if self.artist in self.cahe:
+			self.text.setText(self.cahe[ self.artist])
+			return True
+		return False

@@ -58,19 +58,13 @@ class Lastfm:
 
 	def saveAlbumArt(self, artist, album):
 		if not self.isInit:
-			return False
+			return ''
 		url = self.getAlbumImageUrl(artist, album)
 		if url is None:
-			return False
-
-		#with open(path + '/album.png', 'wb') as handle:
+			return ''
 		path = os.path.join(self.cacheFolder, artist + '_' + album + '_album.png')
 		urllib.request.urlretrieve(url, path)
-
-		#if os.name == OS_WIN:
-		#	img = Image.open(path + '/album.png')
-		#	img.save(path + '/album.ico')
-		return True
+		return path
 	
 	def getTrackWiki(self, artist, song):
 		if not self.isInit:

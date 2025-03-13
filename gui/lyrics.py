@@ -42,8 +42,16 @@ class LyricsFrame(CustomFrame):
 		self.text = TextView(self.screen.height-self.dup-self.ddown, tcolor, name="lyrics")
 		layout.add_widget(self.text)
 
+		self.lyricsCache = {}
+
 		self.fix()
 		self.setPresenter(presenter)
+		#from PIL import Image
+		#from term_image.image import AutoImage
+		#img = Image.open("cache/in.jpg")
+		#image = AutoImage(img)
+		#image.height = 20
+		#self.text.setText(str(image))
 
 	def process_event(self, event):
 		if isinstance(event, KeyboardEvent):
@@ -74,3 +82,15 @@ class LyricsFrame(CustomFrame):
 			
 			self.artist = self.presenter.playerGetCurTag().artist
 			self.song = self.presenter.playerGetCurTag().song
+		id = self.artist + self.song
+		if id in self.lyricsCache:
+			self.setText(self.lyricsCache[id])
+			return True
+		return False
+
+	def updateLyricsCb(self, text, artist, song):
+		self.lyricsCache[artist+song] = text
+		if self.artist == artist and self.song == song:
+			self.setText(text)
+		else:
+			self.presenter.lyricsUpdateText()

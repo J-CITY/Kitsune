@@ -23,6 +23,8 @@ CONFIG_PATH = 'config'
 config = None
 presenter = None
 
+#TODO: async artist bio, cover, load ym playlist
+
 def init(screen, oldScene):
 	global config
 	global presenter
@@ -64,6 +66,8 @@ def init(screen, oldScene):
 		screens.append(Scene([s], -1, name=screenName))
 
 	presenter.setFrameToBars('MainPlaylist')
+
+	presenter.frames[FRAME_LYRICS].text.screen = screen
 
 	screen.play(screens, stop_on_resize=True, start_scene=oldScene)
 

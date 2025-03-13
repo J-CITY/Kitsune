@@ -25,7 +25,17 @@ class CallbackHandler(object):
 	def default(self):
 		pass
 
+class Request:
+	def __init__(self, type, payload, callback):
+		self.type = type
+		self.callback = callback
+		self.payload = payload
 
+requestsQueue = []
+
+class ReuestEnum:
+	YM_GET_FAVORITES = 0
+	GET_LYRICS = 1
 
 class Presenter:
 	def __init__(self, config):#+
@@ -82,27 +92,6 @@ class Presenter:
 	def addFrame(self, id: str, frame: CustomFrame) -> NoReturn:#+
 		self.frames[id] = frame
 
-	def getYandexMusicFavorites(self):
-		return self.yandexMusicClient.getFavorite()
-
-	def getYandexMusicPlaylists(self):
-		return self.yandexMusicClient.getPlaylists()
-	
-	def getYandexMusicPlaylist(self, name):
-		return self.yandexMusicClient.getPlaylist(name)
-
-	def getYandexMusicTrack(self, id):
-		return self.yandexMusicClient.getTrack(id)
-	
-	def getYandexMusicGetTracks(self, ids):
-		return self.yandexMusicClient.getTracks(ids)
-	
-	def getYandexMusicTrackUrl(self, id):
-		return self.yandexMusicClient.getTrackUrl(id)
-
-	def isYandexMusicInit(self) -> bool:
-		return False #self.yandexMusicClient.isInitial()
-
 	def dbSelect(self, query):#+
 		return self.server.dbSelect(query)
 
@@ -123,6 +112,9 @@ class Presenter:
 
 	def playerPlay(self, song):#+
 		tag = getTagFromPath(song)
+		if tag is None:
+			log(LogLevel.ERROR, "Presenter.playerPlay: cant get tag", song)
+			return
 		tag.length = self.server.playerGetSongLength()
 		self.song = tag
 		#self.player.playlist.tracks = [tag]
@@ -250,6 +242,9 @@ class Presenter:
 				e.id+=1
 
 		if playlistName == PLAYLIST_CURRENT:
+			print(playlist.tracks)
+			for t in playlist.tracks:
+				print('!', t.type)
 			self.server.playerSetCurrentPlaylistTracks(playlist.tracks)
 			self.song = tag
 			self.frames[FRAME_MAIN_PLAYLIST].table.updateList(playlist.tracks)
@@ -262,12 +257,15 @@ class Presenter:
 	def browserCreateNewPlaylistAndSaveSong(self, playlistName):#+
 		frame = self.frames.get(FRAME_BROWSER, None)
 		if frame is None:
-			log(LogLevel.INFO, "browserCreateNewPlaylistAndSaveSong: 'BrowserFrame' doesn`t exist")
+			log(LogLevel.INFO, "Presenter.browserCreateNewPlaylistAndSaveSong: 'BrowserFrame' doesn`t exist")
 			return
 
 		pathPlaylist = os.path.join(self.config.playlist_folder, playlistName)
 		song = self.frames[FRAME_BROWSER].browser.value
 		tag = getTagFromPath(song)
+		if tag is None:
+			log(LogLevel.ERROR, "Presenter.browserCreateNewPlaylistAndSaveSong: cant get tag", song)
+			return
 		tag.length = self.player.getLen()
 		tag.id = 0
 		savePlaylist([tag], pathPlaylist)
@@ -312,6 +310,12 @@ class Presenter:
 
 	def run(self):#+
 		thread = threading.Thread(target=self.barUpdate)
+		thread.daemon = True
+		thread.start()
+
+		#if not self.useInternet:
+		#	return
+		thread = threading.Thread(target=self.asyncHandler)
 		thread.daemon = True
 		thread.start()
 
@@ -432,7 +436,8 @@ class Presenter:
 	def artistinfoUpdateText(self):#+
 		#if not self.useInternet:
 		#	return ''
-		self.frames[FRAME_ARTIST_INFO].updateArtist()
+		if self.frames[FRAME_ARTIST_INFO].updateArtist():
+			return
 		thread = threading.Thread(target=self.artistinfoUpdateTextAsync, args=(self.frames[FRAME_ARTIST_INFO].artist,))
 		thread.daemon = True
 		thread.start()
@@ -444,23 +449,69 @@ class Presenter:
 			localserver = Proxy("PYRONAME:kitsune.music.daemon")
 		text = localserver.lyricsGetSongLyrics(artist, song)
 		if self.frames[FRAME_LYRICS].artist == artist and self.frames[FRAME_LYRICS].song == song:
-			log(LogLevel.INFO, "lyrics2", text)
 			self.frames[FRAME_LYRICS].setText(text)
 		else:
-			log(LogLevel.INFO, "lyrics3", text)
 			self.lyricsUpdateTextAsync(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song, localserver)
 
 	def lyricsUpdateText(self):#+
 		#if not self.useInternet:
 		#	return
-		self.frames[FRAME_LYRICS].updateArtistSong()
-		thread = threading.Thread(target=self.lyricsUpdateTextAsync, \
-			args=(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song,))
-		thread.daemon = True
-		thread.start()
+		if self.frames[FRAME_LYRICS].updateArtistSong():
+			return
+		r = Request(ReuestEnum.GET_LYRICS, 
+			{'artist': self.frames[FRAME_LYRICS].artist, 'song': self.frames[FRAME_LYRICS].song}, 
+			self.frames[FRAME_LYRICS].updateLyricsCb)
+		self.addRequest(r)
+
+		#thread = threading.Thread(target=self.lyricsUpdateTextAsync, \
+		#	args=(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song,))
+		#thread.daemon = True
+		#thread.start()
 
 	def playerGetLen(self):#+
 		return self.server.playerGetSongLength()
 
 	def playerGetBuf(self):#+
 		return self.server.playerGetCurrentSongProgress()
+
+	def getYandexMusicFavorites(self):#+
+		return self.server.yandexMusicGetFavorites()
+
+	def getYandexMusicPlaylists(self):#+
+		return self.server.yandexMusicGetPlaylists()
+	
+	def getYandexMusicPlaylist(self, name):#+
+		return self.server.yandexMusicGetPlaylist(name)
+
+	def getYandexMusicTrack(self, id):#+
+		return self.server.yandexMusicGetMusicTrack(id)
+	
+	def getYandexMusicGetTracks(self, ids):#+
+		return self.server.yandexMusicGetTracks(ids)
+	
+	def getYandexMusicTrackUrl(self, id):#+
+		return self.server.yandexMusicGetTrackUrl(id)
+
+	def loadYandexMusicTrack(self, id):#+
+		return self.server.yandexMusicDownloadTrack(id)
+
+	def isYandexMusicInit(self) -> bool:#+
+		return self.server.yandexMusicIsInit()
+
+	def addRequest(self, r):
+		requestsQueue.append(r)
+
+	def asyncHandler(self):
+		localserver = Proxy("PYRONAME:kitsune.music.daemon")
+		while True:
+			if len(requestsQueue) > 0:
+				r = requestsQueue[0]
+				requestsQueue.pop(0)
+				match r.type:
+					case ReuestEnum.YM_GET_FAVORITES:
+						r.callback(localserver.yandexMusicGetFavorites())
+					case ReuestEnum.GET_LYRICS:
+						res = localserver.lyricsGetSongLyrics(r.payload["artist"], r.payload["song"])
+						r.callback(res, r.payload["artist"], r.payload["song"])
+			else:
+				time.sleep(0.500)

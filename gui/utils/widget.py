@@ -732,6 +732,7 @@ class CustomFrame(Frame):
 		self.dup = len(self.upBar.layouts)
 		self.ddown = len(self.downBar.layouts)
 		self.presenter = None
+		self.currentFrameId = 0
 
 		super(CustomFrame, self).__init__(
 			screen, height, width, has_border=has_border, name=name)
@@ -763,6 +764,16 @@ class CustomFrame(Frame):
 			_l.add_widget(self.downBar.lables[i+1], 1)
 			_l.add_widget(self.downBar.lables[i+2], 2)
 			i+=3
+	
+	def switchFrame(self, presenter, screenName, i):
+		from asciimatics.exceptions import NextScene
+		self.currentFrameId = i
+		presenter.setFrameToBars(screenName)
+		if screenName == FRAME_LYRICS:
+			presenter.lyricsUpdateText()
+		if screenName == FRAME_ARTIST_INFO:
+			presenter.artistinfoUpdateText()
+		raise NextScene(screenName)
 
 	def swichWindow(self, presenter, event):
 		from asciimatics.exceptions import NextScene, StopApplication
@@ -771,14 +782,17 @@ class CustomFrame(Frame):
 		#if event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
 		#		raise StopApplication("User quit")
 
+		if event.key_code in []:
+			id = (self.currentFrameId + 1) % len(presenter.config.screens)
+			self.switchFrame(presenter, presenter.config.screens[id], id)
+		if event.key_code in []:
+			id = self.currentFrameId - 1
+			if id < 0:
+				id = len(presenter.config.screens) - 1
+			self.switchFrame(presenter, presenter.config.screens[id], id)
 		for i, screenName in enumerate(presenter.config.screens):
-			if event.key_code in [ord(str(i + 1))]:
-				presenter.setFrameToBars(screenName)
-				if screenName == FRAME_LYRICS:
-					presenter.lyricsUpdateText()
-				if screenName == FRAME_ARTIST_INFO:
-					presenter.artistinfoUpdateText()
-				raise NextScene(screenName)
+			if event.key_code in [ord(str(i + 1 if i < 9 else 0))]:
+				self.switchFrame(presenter, screenName, i)
 		
 		#if event.key_code in [ord("i")]:
 		#	self._scene.add_effect(
@@ -786,39 +800,6 @@ class CustomFrame(Frame):
 		#			"Info",
 		#			["OK"],
 		#			config=presenter.config, win=self.frameName))
-
-		#if event.key_code in [ord('1')]:
-		#	presenter.setFrameToBars("MainPlaylist")
-		#	raise NextScene("MainPlaylist")
-		#elif event.key_code in [ord('2')]:
-		#	presenter.setFrameToBars("Browser")
-		#	raise NextScene("Browser")
-		#elif event.key_code in [ord('3')]:
-		#	presenter.setFrameToBars("Playlists")
-		#	raise NextScene("Playlists")
-		#elif event.key_code in [ord('4')]:
-		#	presenter.setFrameToBars("Medialib")
-		#	raise NextScene("Medialib")
-		#elif event.key_code in [ord('5')]:
-		#	presenter.setFrameToBars("Visualizer")
-		#	raise NextScene("Visualizer")
-		#elif event.key_code in [ord('6')]:
-		#	presenter.setFrameToBars("Equalizer")
-		#	raise NextScene("Equalizer")
-		#elif event.key_code in [ord('7')]:
-		#	presenter.artistinfoUpdateText()
-		#	presenter.setFrameToBars("ArtistInfo")
-		#	raise NextScene("ArtistInfo")
-		#elif event.key_code in [ord('8')]:
-		#	presenter.lyricsUpdateText()
-		#	presenter.setFrameToBars("Lyrics")
-		#	raise NextScene("Lyrics")
-		#elif event.key_code in [ord('0')]:
-		#	presenter.setFrameToBars("Clock")
-		#	raise NextScene("Clock")
-		#elif event.key_code in [ord('9')]:
-		#	presenter.setFrameToBars("Search")
-		#	raise NextScene("Search")
 
 class VisualParam(Enum):
 	WAVE = 1
@@ -944,7 +925,6 @@ class CustomVisualizer(Effect):
 			if isStereo:
 				for x, y in enumerate(self.spectbuf[1]):
 					self._screen.print_at(' ', x,int(y)-offset-5,bg=0)
-		
 		self.spectbuf = [[],[]]
 		for c in range(0, self.channel):
 			for x in range(0, self._screen.width):
@@ -1130,10 +1110,7 @@ class CustomVisualizer(Effect):
 		for x in range(0, self._screen.width):
 			if x >= 1022:
 				break
-			
-			#v = 0 if self.buf[x + 1] < 0 else self.buf[x + 1]
-			#y = sqrt(v) * 5 * self.spectrumHeight - 4
-			y = self.buf[x + 1] * 2 * self.spectrumHeight
+			y = self.buf[x + 1] * self.spectrumHeight * (1.5 if isStereo else 1)
 			if y > self.spectrumHeight:
 				y = self.spectrumHeight
 			self.spectbuf[0].append(int(y))
@@ -2633,6 +2610,11 @@ class TextView(Widget):
 					self._x + self._offset + dx,
 					self._y + i - self._start_line + dy,
 					colour, attr, bg)
+
+		#if self.screen:
+		#	import win32console
+		#	self.screen._stdout.SetConsoleCursorPosition(win32console.PyCOORDType(10, 10))
+		#	self.screen._stdout.WriteConsole(self.text)
 
 	def process_event(self, event):
 		if isinstance(event, KeyboardEvent):
