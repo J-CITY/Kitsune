@@ -328,8 +328,7 @@ class Presenter:
 		self.downBar.setFrame(frame)
 
 	def createNewPlaylistAndSaveMainPlaylist(self, playlistName):
-		path = self.config.playlist_folder + "/"+ \
-			playlistName if self.config.playlist_folder[len(self.config.playlist_folder)-1] != "/" else playlistName
+		path = os.path.join(self.config.playlist_folder, playlistName)
 		savePlaylist(self.player.playlist, path)
 		self.playlistsUpdatePlaylists()
 
@@ -415,12 +414,6 @@ class Presenter:
 
 	def barGetFrameName(self):#+
 		return self.upBar.getFrameName()
-
-	#TODO: maybe better create one thread for that
-	#def lastfmSaveAlbum(self, artist, album):
-	#	return self.lastfm.saveAlbumArt(artist, album)
-	#def lastfmGetAlbumUrl(self, artist, album):
-	#	return self.lastfm.getAlbumImageUrl(artist, album)
 
 	def artistinfoUpdateTextAsync(self, artist, server = None):
 		if server:
@@ -515,3 +508,9 @@ class Presenter:
 						r.callback(res, r.payload["artist"], r.payload["song"])
 			else:
 				time.sleep(0.500)
+
+	def openMusicFile(self, path):
+		self.server.openMusicFile(path)
+
+	def playerSavePlaylist(self):
+		self.server.playerSavePlaylist()

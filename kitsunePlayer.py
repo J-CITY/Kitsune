@@ -24,6 +24,7 @@ config = None
 presenter = None
 
 #TODO: async artist bio, cover, load ym playlist
+#TODO reg custom colors
 
 def init(screen, oldScene):
 	global config
@@ -71,18 +72,6 @@ def init(screen, oldScene):
 
 	screen.play(screens, stop_on_resize=True, start_scene=oldScene)
 
-#def openFile(fname):
-#	path = config.cash_folder + "/cash.json" if config.cash_folder[len(config.cash_folder)-1] != "/" else "cash.json"
-#	playlist = loadPlaylist(path)
-#	tag = getTagFromPath(fname)
-#	tag.id = 0
-#	for t in playlist:
-#		t.id += 1
-#	playlist = [tag] + playlist
-#	savePlaylist(playlist, path)
-#	player.playlist = playlist
-#	#player.play()
-
 def printHelp():
 	from gui.dialog_info import (CONTROL_INFO, CLOCK_INFO, PLAYER_CONTROL_INFO,
 		MAINPLAYLIST_INFO, PLAYLISTS_INFO, BROWSER_INFO, EQUALIZER_INFO,
@@ -97,9 +86,7 @@ def printHelp():
 def argParse():
 	lenargs = len(sys.argv)
 	if lenargs == 2 and sys.argv[1] != "-h" and sys.argv[1] != "--help":
-		pass
-		#TODO call server update playlist
-		#openFile(sys.argv[1])
+		presenter.openMusicFile(sys.argv[1])
 	elif lenargs == 2 and (sys.argv[1] == "-h" or sys.argv[1] == "--help"):
 		printHelp()
 		sys.exit()
@@ -121,9 +108,7 @@ def main():
 	while True:
 		try:
 			Screen.wrapper(init, catch_interrupt=False, arguments=[lastScene])
-			#TODO: call server save main playlist
-			#path = config.cash_folder + "/cache.json" if config.cash_folder[len(config.cash_folder)-1] != "/" else "cache.json"
-			#savePlaylist(player.playlist, path)
+			presenter.playerSavePlaylist()
 			sys.exit(0)
 		except ResizeScreenError as e:
 			lastScene = e.scene

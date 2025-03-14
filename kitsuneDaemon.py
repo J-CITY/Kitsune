@@ -474,6 +474,21 @@ class CallbackServer(object):
 			# Add to medialib
 			db.insertByPath(path)
 
+	def openMusicFile(self, path):
+		path = os.path.join(self.config.cache_folder, 'cache.json')
+		playlist = loadPlaylist(path)
+		tag = getTagFromPath(path)
+		tag.id = 0
+		for t in playlist:
+			t.id += 1
+		playlist = [tag] + playlist
+		savePlaylist(playlist, path)
+		player.playlist = playlist
+		player.play()
+
+	def playerSavePlaylist(self):
+		path = os.path.join(self.config.cache_folder, 'cache.json')
+		savePlaylist(player.playlist, path)
 
 #daemon = Daemon()
 #ns = locate_ns()

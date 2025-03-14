@@ -119,3 +119,24 @@ class Database:
 		res = cursor.fetchall()
 		cursor.close()
 		return res
+
+	def searchArtist(self, text):
+		cursor = self.conn.cursor()
+		cursor.execute("SELECT * FROM " + self.tableName + " WHERE artist LIKE ?", (text))
+		res = cursor.fetchall()
+		cursor.close()
+		return res
+
+	def searchAlbum(self, text):
+		cursor = self.conn.cursor()
+		cursor.execute("SELECT * FROM " + self.tableName + " WHERE album LIKE ?", (text))
+		res = cursor.fetchall()
+		cursor.close()
+		return res
+
+	def searchTrack(self, text):
+		cursor = self.conn.cursor()
+		cursor.execute("SELECT * FROM " + self.tableName + " WHERE song LIKE ?", (text))
+		res = cursor.fetchall()
+		cursor.close()
+		return res

@@ -82,6 +82,50 @@ class YandexMusicClient:
 		_playlist = {"title": name, "tracks": tracks}
 		return _playlist
 
+	def getPlaylist(self, id):
+		if not self.isInit:
+			return None
+
+		playlist = self.client.playlists_list(id)
+		if playlist is None:
+			return None
+
+		tracksResult = playlist[0].tracks if playlist[0].tracks else playlist[0].fetch_tracks()
+		tracks = []
+		for t in tracksResult:
+			tracks.append(t.id)
+		_playlist = {"title": playlist[0].title, "tracks": tracks}
+		return _playlist
+
+	def getAlbum(self, id):
+		if not self.isInit:
+			return None
+
+		album = self.client.albums_with_tracks(id)
+		if album is None:
+			return None
+
+		tracksResult = []
+		for v in album.volumes:
+			tracksResult += v
+		tracks = []
+		for t in tracksResult:
+			tracks.append({'id': t.id, 'title': t.title})
+		return {"title": album.title, "tracks": tracks}
+
+	def getArtist(self, id):
+		if not self.isInit:
+			return None
+
+		albums = self.client.artists_direct_albums(id)
+		if albums is None:
+			return None
+
+		albums = []
+		for t in albums:
+			albums.append({'id': t.id, 'title': t.title})
+		return {"albums": albums}
+
 	def getWorldChart(self):
 		if not self.isInit:
 			return None
@@ -89,6 +133,17 @@ class YandexMusicClient:
 		if result is None:
 			return None
 		playlist = {"name": 'world', "tracks": []}
+		for i, song in enumerate(result.tracks):
+			playlist["tracks"].append(song.id)
+		return playlist
+
+	def getChart(self, name):
+		if not self.isInit:
+			return None
+		result = self.client.chart(name).chart
+		if result is None:
+			return None
+		playlist = {"name": name, "tracks": []}
 		for i, song in enumerate(result.tracks):
 			playlist["tracks"].append(song.id)
 		return playlist
@@ -182,3 +237,99 @@ class YandexMusicClient:
 		path = os.path.join(cacheFolder, artist + '_info.png')
 		artist.download_op_image(path, size)
 		return path
+
+	def search(self, query):
+		if not self.isInit:
+			return None
+		searchResult = self.client.search(query)
+		type_ = searchResult.best.type
+		best_ = searchResult.best.result
+
+		result = {}
+		if best_:
+			best = {}
+			best['type'] = type_
+			if type_ == 'track':
+				best['id'] = best_.id
+				best['artists'] = [a.name for a in best_.artists]
+				best['albums'] = [a.name for a in best_.albums]
+				best['title'] = best_.title
+			elif type_ == 'artist':
+				best['id'] = best_.id
+				best['artist'] = best_.name
+			elif type_ == 'album':
+				best['id'] = best_.id
+				best['album'] = best_.title
+			elif type_ == 'playlist':
+				best['id'] = best_.id
+				best['playlist'] = best_.title
+			result['best'] = best
+
+		result['artists'] = self._getArtists(searchResult)
+		result['albums'] = self._getAlbums(searchResult)
+		result['tracks'] = self._getTracks(searchResult)
+		result['playlists'] = self._getPlaylists(searchResult)
+		return result
+
+	def _getArtists(self, searchResult):
+		if not self.isInit:
+			return None
+		if searchResult.artists:
+			artists = []
+			for artist in searchResult.artists.results:
+				artists.append({'id': artist.id, 'name': artist.name})
+			return artists
+
+	def _getAlbums(self, searchResult):
+		if searchResult.albums:
+			albums = []
+			for album in searchResult.albums.results:
+				albums.append({'id': album.id, 'name': album.name})
+			return albums
+
+	def _getTracks(self, searchResult):
+		if searchResult.tracks:
+			tracks = []
+			for track in searchResult.tracks.results:
+				tracks.append({'id': track.id, 'name': track.name})
+			return tracks
+
+	def _getPlaylists(self, searchResult):
+		if searchResult.playlists:
+			playlists = []
+			for playlist in searchResult.playlists.results:
+				playlists.append({'id': playlist.id, 'name': playlist.name})
+			return playlists
+
+	def searchArtist(self, query):
+		if not self.isInit:
+			return None
+		searchResult = self.client.search(query)
+		result = {}
+		result['artists'] = self._getArtists(searchResult)
+		return result
+
+	def searchArtist(self, query):
+		if not self.isInit:
+			return None
+		searchResult = self.client.search(query)
+		result = {}
+		result['albums'] = self._getAlbums(searchResult)
+		return result
+
+	def searchSong(self, query):
+		if not self.isInit:
+			return None
+		searchResult = self.client.search(query)
+		result = {}
+		result['tracks'] = self._getTracks(searchResult)
+		return result
+
+	def searchPlaylists(self, query):
+		if not self.isInit:
+			return None
+		searchResult = self.client.search(query)
+		result = {}
+		result['playlists'] = self._getPlaylists(searchResult)
+		return result
+

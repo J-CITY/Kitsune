@@ -22,7 +22,7 @@ class TrackType(IntEnum):
 class Tag:
 	def __init__(self):
 		self.type: TrackType = TrackType.LOCAL
-		self.url: str = '' #TODO: del it
+		self.url: str = ''
 		self.artist: str = ''
 		self.album: str = ''
 		self.song: str = ''

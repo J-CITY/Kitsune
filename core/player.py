@@ -11,6 +11,8 @@ from core.tag_controller import *
 from multiprocessing import Process
 from core.strings import OS_LINUX, OS_WIN
 
+#TODO: Add YM Flow
+
 class PlayMode:
 	MOD_ONE_SONG = 0
 	MOD_SONG_CIRCLE = 1
@@ -124,10 +126,6 @@ class Player:
 		self.eqSpeedParam = 0
 
 		self.getYandexMusicUrlCb = None
-
-		#Visualization
-		# TODO: add to confit def param and to cache
-		# self.param = config.visualization
 
 	def __del__(self):
 		self.destructor()

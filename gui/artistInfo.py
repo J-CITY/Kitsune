@@ -19,7 +19,6 @@ from typing import NoReturn
 from asciimatics.screen import Screen
 from core.strings import FRAME_ARTIST_INFO
 
-#TODO: cache
 class ArtistInfoFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, presenter):
 		super(ArtistInfoFrame, self).__init__(

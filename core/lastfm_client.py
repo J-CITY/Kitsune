@@ -56,6 +56,19 @@ class Lastfm:
 		else:
 			return None
 
+	def getArtistImageUrl(self, artist):
+		if not self.isInit:
+			return None
+		try:
+			search = self.network.search_for_artist(artist)
+			results = search.get_next_page()
+			if len(results) > 0:
+				images = results[0].info["image"]
+				return images[pylast.SIZE_EXTRA_LARGE]
+		except:
+			pass
+		return None
+
 	def saveAlbumArt(self, artist, album):
 		if not self.isInit:
 			return ''
@@ -63,6 +76,16 @@ class Lastfm:
 		if url is None:
 			return ''
 		path = os.path.join(self.cacheFolder, artist + '_' + album + '_album.png')
+		urllib.request.urlretrieve(url, path)
+		return path
+
+	def saveArtistImage(self, artist):
+		if not self.isInit:
+			return ''
+		url = self.getArtistImageUrl(artist)
+		if url is None:
+			return ''
+		path = os.path.join(self.cacheFolder, artist + '_info.png')
 		urllib.request.urlretrieve(url, path)
 		return path
 	

@@ -20,7 +20,6 @@ import asyncio
 from typing import NoReturn
 from core.strings import FRAME_LYRICS
 
-#TODO: cache
 class LyricsFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, presenter):
 		super(LyricsFrame, self).__init__(
