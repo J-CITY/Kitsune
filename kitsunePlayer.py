@@ -1,21 +1,25 @@
 import sys
-from asciimatics.widgets import *
-from asciimatics.scene import Scene
-from asciimatics.screen import Screen
-from asciimatics.exceptions import ResizeScreenError
-from collections import namedtuple
-from gui.bar import *
-from gui.mainplaylist import *
-from gui.browser import *
-from gui.medialib import *
-from gui.clock import *
-from gui.equalizer import *
-from gui.playlists import *
-from gui.visualization import *
-from gui.search import *
-from gui.artistInfo import *
-from gui.lyrics import *
-from gui.presenter import *
+try:
+	from asciimatics.widgets import *
+	from asciimatics.scene import Scene
+	from asciimatics.screen import Screen
+	from asciimatics.exceptions import ResizeScreenError
+	from collections import namedtuple
+	from gui.bar import *
+	from gui.mainplaylist import *
+	from gui.browser import *
+	from gui.medialib import *
+	from gui.clock import *
+	from gui.equalizer import *
+	from gui.playlists import *
+	from gui.visualization import *
+	from gui.search import *
+	from gui.artistInfo import *
+	from gui.lyrics import *
+	from gui.presenter import *
+except ImportError or ModuleNotFoundError:
+	log(LogLevel.ERROR, "Some important lids are not installed (asciimatics)")
+	exit(1)
 from core.strings import *
 
 CONFIG_PATH = 'config'
@@ -23,12 +27,18 @@ CONFIG_PATH = 'config'
 config = None
 presenter = None
 
-#TODO: async artist bio, cover, load ym playlist
-#TODO reg custom colors
-
 def init(screen, oldScene):
 	global config
 	global presenter
+
+	colorId = 8
+	for color in config.custom_colors:
+		screen._COLOURS[colorId] = color
+		colorId += 1
+	colorId = 8
+	for color in config.custom_bg_colors:
+		screen._BG_COLOURS[colorId] = color
+		colorId += 1
 
 	upBar = Bar()
 	upBar.parse(config, UP_BAR)
@@ -67,7 +77,6 @@ def init(screen, oldScene):
 		screens.append(Scene([s], -1, name=screenName))
 
 	presenter.setFrameToBars('MainPlaylist')
-
 	presenter.frames[FRAME_LYRICS].text.screen = screen
 
 	screen.play(screens, stop_on_resize=True, start_scene=oldScene)

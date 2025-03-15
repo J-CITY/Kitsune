@@ -25,8 +25,7 @@ class ArtistInfoFrame(CustomFrame):
 			screen, screen.height, screen.width, has_border=False, name=FRAME_ARTIST_INFO, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
 		self.dup = len(upBar.layouts)
 		self.ddown = len(downBar.layouts)
-		self.artist = ""
-		
+
 		self.addUpBar()
 		
 		layout = Layout([1], fill_frame=True)
@@ -66,10 +65,15 @@ class ArtistInfoFrame(CustomFrame):
 		self.text.setText(text)
 
 	def updateArtist(self):
-		if self.presenter != None and self.artist != self.presenter.playerGetCurTag().artist:
-			self.artist = self.presenter.playerGetCurTag().artist
-
-		if self.artist in self.cahe:
+		if self.presenter.playerGetCurTag().artist in self.cahe:
 			self.text.setText(self.cahe[ self.artist])
 			return True
 		return False
+	
+	def updateArtistCb(self, text, artist):
+		if text != '':
+			self.cahe[artist] = text
+		if self.presenter.song and self.presenter.song.artist == artist:
+			self.setText(text)
+		else:
+			self.presenter.artistinfoUpdateText()

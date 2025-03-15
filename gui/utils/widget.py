@@ -17,14 +17,15 @@ from math import sin, cos, pi, sqrt, log, exp
 from pyfiglet import Figlet, DEFAULT_FONT
 from asciimatics.renderers import FigletText
 
-from core.utils import getColor, getAttr, ColorTheme, split_text, MusicAddPolitics
+from core.utils import getColor, getAttr, ColorTheme, split_text, MusicAddPolitics, loadImage
 import datetime
 from six import with_metaclass
 import re
 from wcwidth import wcswidth
 import itertools
 from core.player import PlayMode
-from core.strings import FRAME_LYRICS, FRAME_ARTIST_INFO
+from core.keyboard import EKeyAction
+from core.strings import FRAME_LYRICS, FRAME_ARTIST_INFO, FRAME_MAIN_PLAYLIST
 
 class CustomLabel(Widget):
 	def __init__(self, height=1, align="<", divider=' '):
@@ -771,16 +772,18 @@ class CustomFrame(Frame):
 		presenter.setFrameToBars(screenName)
 		if screenName == FRAME_LYRICS:
 			presenter.lyricsUpdateText()
+			presenter.lyricsUpdateCover()
 		if screenName == FRAME_ARTIST_INFO:
 			presenter.artistinfoUpdateText()
+		if screenName == FRAME_MAIN_PLAYLIST:
+			presenter.mainPlaylistUpdateCover()
 		raise NextScene(screenName)
 
 	def swichWindow(self, presenter, event):
 		from asciimatics.exceptions import NextScene, StopApplication
 		from gui.dialog_info import InfoDialog
-		#TODO: remove it from frames and uncomment this
-		#if event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
-		#		raise StopApplication("User quit")
+		if event.key_code in presenter.keyboard.getKey(EKeyAction.EXIT):
+				raise StopApplication("User quit")
 
 		if event.key_code in []:
 			id = (self.currentFrameId + 1) % len(presenter.config.screens)
@@ -793,13 +796,13 @@ class CustomFrame(Frame):
 		for i, screenName in enumerate(presenter.config.screens):
 			if event.key_code in [ord(str(i + 1 if i < 9 else 0))]:
 				self.switchFrame(presenter, screenName, i)
-		
-		#if event.key_code in [ord("i")]:
-		#	self._scene.add_effect(
-		#		InfoDialog(self._screen, 
-		#			"Info",
-		#			["OK"],
-		#			config=presenter.config, win=self.frameName))
+
+		if event.key_code in presenter.keyboard.getKey(EKeyAction.INFO):
+			self._scene.add_effect(
+				InfoDialog(self._screen, 
+					"Info",
+					["OK"],
+					config=presenter.config, win=self.frameName))
 
 class VisualParam(Enum):
 	WAVE = 1
@@ -2563,6 +2566,7 @@ class CustomCheckBox(Widget):
 		if old_value != self._value and self._on_change:
 			self._on_change()
 
+#TODO not now: fix problem with clear
 class TextView(Widget):
 	def __init__(self, height, color, label=None, name=None, as_string=False, line_wrap=False,
 				 on_change=None, **kwargs):
@@ -2599,8 +2603,7 @@ class TextView(Widget):
 				colour, attr, bg)
 		
 		## Restrict to visible/valid content.
-		self._start_line = max(0, min(self._line, len(self._value)-self._h))
-
+		self._start_line = self._line
 		# Render visible portion of the text.
 		for i in range(self._start_line, self._start_line + height):
 			if i < len(self._value):
@@ -2611,23 +2614,20 @@ class TextView(Widget):
 					self._y + i - self._start_line + dy,
 					colour, attr, bg)
 
-		#if self.screen:
-		#	import win32console
-		#	self.screen._stdout.SetConsoleCursorPosition(win32console.PyCOORDType(10, 10))
-		#	self.screen._stdout.WriteConsole(self.text)
-
 	def process_event(self, event):
 		if isinstance(event, KeyboardEvent):
 			if event.key_code == Screen.KEY_UP:
 				# Move up one line in text
 				self._line = max(0, self._line - 1)
-				if len(self._value) > 0 and self._column >= len(self._value[self._line]):
-					self._column = len(self._value[self._line])
+				#if len(self._value) > 0 and self._column >= len(self._value[self._line]):
+				#	self._column = len(self._value[self._line])
 			elif event.key_code == Screen.KEY_DOWN:
 				# Move down one line in text
 				self._line = min(len(self._value) - 1, self._line + 1)
-				if len(self._value) > 0 and self._column >= len(self._value[self._line]):
-					self._column = len(self._value[self._line])
+				if self._line + self._h > len(self._value):
+					self._line -= 1
+				#if len(self._value) > 0 and self._column >= len(self._value[self._line]):
+				#	self._column = len(self._value[self._line])
 			else:
 				# Ignore any other key press.
 				return event
@@ -2669,7 +2669,7 @@ class TextView(Widget):
 		if new_value is None:
 			self._value = [""]
 		elif self._as_string:
-			self._value = new_value.split("\n")
+			self.setText(new_value)
 		else:
 			self._value = new_value
 	
@@ -2708,6 +2708,132 @@ def _get_offset(text, visible_width):
 	if visible_width - width < 0:
 		result -= 1
 	return result
+
+
+class ImageView(Widget):
+	def __init__(self, height, color, label=None, name=None, as_string=False, line_wrap=False, on_change=None, **kwargs):
+		super(ImageView, self).__init__(name, tab_stop=False, **kwargs)
+		self._label = label
+		self._line = 0
+		self._column = 0
+		self._start_line = 0
+		self._start_column = 0
+		self._required_height = height
+		self._as_string = as_string
+		self._line_wrap = line_wrap
+		self._on_change = on_change
+		self._reflowed_text_cache = None
+		self.string_len = wcswidth
+
+		self.image = ""
+		self.imagePath = ""
+		self.imageWidth = 0
+		self.color = color
+		self._value = []
+		self.screen = None
+	
+	def setImage(self, imagePath, width=20, x=0, y=0):
+		if self.imagePath == imagePath:
+			return
+		self.imageWidth = width
+		self.imagePath = imagePath
+		self.image = loadImage(imagePath, width)
+		self._xx = x
+		self._yy = y
+
+		self._value = self.image.split("\n")
+
+	def update(self, frame_no):
+		self._draw_label()
+		height = self._h
+		dx = dy = 0
+		#(colour, attr, bg) = self._pick_colours("edit_text")
+		colour = self.color.color
+		attr = self.color.attr
+		bg = self.color.bg
+		for i in range(height):
+			self._frame.canvas.print_at(
+				" " * self._w,
+				self._x + self._offset + dx,
+				self._y + i + dy,
+				colour, attr, bg)
+		
+		## Restrict to visible/valid content.
+		self._start_line = max(0, min(self._line, len(self._value)-self._h))
+
+		for i in range(self._start_line, self._start_line + height):
+			if i < len(self._value) and self.screen:
+				self.screen._print_at(self._value[i], 
+						  self._xx + self._x + self._offset + dx, 
+						  self._yy + self._y + i - self._start_line + dy, self.imageWidth)
+
+	def clear(self):
+		dx = dy = 0
+		colour = self.color.color
+		attr = self.color.attr
+		bg = self.color.bg
+		self._start_line = max(0, min(self._line, len(self._value)-self._h))
+		for i in range(self._start_line, self._start_line + self.imageWidth):
+			self._frame.canvas.print_at(
+				" " * self.imageWidth,
+				self._xx + self._x + self._offset + dx,
+				self._yy + self._y + i + dy,
+				colour, attr, bg)
+
+	def process_event(self, event):
+		return event
+
+	def required_height(self, offset, width):
+		return self._required_height
+
+	@property
+	def _reflowed_text(self):
+		if self._reflowed_text_cache is None:
+			if self._line_wrap:
+				self._reflowed_text_cache = []
+				limit = self._w - self._offset
+				for i, line in enumerate(self._value):
+					column = 0
+					while self.string_len(line) >= limit:
+						sub_string = _enforce_width(
+							line, limit, self._frame.canvas.unicode_aware)
+						self._reflowed_text_cache.append((sub_string, i, column))
+						line = line[len(sub_string):]
+						column += len(sub_string)
+					self._reflowed_text_cache.append((line, i, column))
+			else:
+				self._reflowed_text_cache = [(x, i, 0) for i, x in enumerate(self._value)]
+
+		return self._reflowed_text_cache
+	def reset(self):
+		pass
+	@property
+	def value(self):
+		if self._value is None:
+			self._value = [""]
+		return "\n".join(self._value) if self._as_string else self._value
+
+	@value.setter
+	def value(self, new_value):
+		if new_value is None:
+			self._value = [""]
+		elif self._as_string:
+			self._value = new_value.split("\n")
+		else:
+			self._value = new_value
+
+	#def updateValue(self):
+	#	self._value = self.image.split("\n")
+	#	_value = []
+	#	for v in self._value:
+	#		_value += [ v[i:i+self._w] for i in range(0, len(v), self._w) ]
+	#	self._value = _value
+
+	@property
+	def frame_update_count(self):
+		# Force refresh for cursor if needed.
+		return 1 if self._has_focus and not self._frame.reduce_cpu else 0
+
 
 class CustomText(Widget):
 	def __init__(self, color, label=None, name=None, on_change=None, validator=None, hide_char=None,

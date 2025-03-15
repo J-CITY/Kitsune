@@ -61,7 +61,10 @@ def getColor(c: str) -> int:
 		'white': 7
 	}
 	if c not in map:
-		return 0 #default value
+		try:
+			return int(c) #extend color
+		except:
+			return 0 #default value
 	return map[c]
 	
 def getAttr(a: str) -> int:
@@ -113,3 +116,16 @@ def _find_min_start(text: str, max_width: int, unicode_aware=True, at_end=False)
 	if at_end and display_end == max_width:
 		result += 1
 	return result
+
+
+def loadImage(imagePath, width=20):
+	try:
+		from PIL import Image
+		from term_image.image import AutoImage
+	except ImportError or ModuleNotFoundError:
+		log(LogLevel.ERROR, "pillow or term_image lib not found")
+		return ""
+	img = Image.open(imagePath)
+	image = AutoImage(img)
+	image.width = width
+	return str(image)

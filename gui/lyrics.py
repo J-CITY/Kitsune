@@ -13,7 +13,7 @@ from gui.dialog import AddMusicDialog
 from asciimatics.effects import Print, Clock
 
 from core.utils import getColor, getAttr, ColorTheme
-from gui.utils.widget import CustomFrame, TextView
+from gui.utils.widget import CustomFrame, TextView, ImageView
 from asciimatics.renderers import Rainbow
 from gui.dialog_info import InfoDialog
 import asyncio
@@ -26,36 +26,46 @@ class LyricsFrame(CustomFrame):
 			screen, screen.height, screen.width, has_border=False, name=FRAME_LYRICS, upBar=upBar, downBar=downBar, bg=getColor(presenter.config.bg_color))
 		self.dup = len(upBar.layouts)
 		self.ddown = len(downBar.layouts)
-		self.artist = ""
-		self.song = ""
-		
-		self.addUpBar()
-
-		layout = Layout([1], fill_frame=True)
-		self.add_layout(layout)
-		
-		self.addDownBar()
 
 		c = presenter.config.lyrics.color.split(':')
-		tcolor = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
-		self.text = TextView(self.screen.height-self.dup-self.ddown, tcolor, name="lyrics")
-		layout.add_widget(self.text)
+		self.tcolor = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
+		self.text = TextView(self.screen.height-self.dup-self.ddown, self.tcolor, name="lyrics")
+		self.showImage = False
+		self.image = ImageView(self.screen.height-self.dup-self.ddown, self.tcolor, name="art")
+		self.image.screen = screen
+		
+		self.createLayout()
 
 		self.lyricsCache = {}
-
-		self.fix()
 		self.setPresenter(presenter)
-		#from PIL import Image
-		#from term_image.image import AutoImage
-		#img = Image.open("cache/in.jpg")
-		#image = AutoImage(img)
-		#image.height = 20
-		#self.text.setText(str(image))
+
+	def createLayout(self):
+		scrW = self.image.screen.width
+		self.image.clear()
+		self._layouts = []
+		self.addUpBar()
+		if self.showImage:
+			col1sz = 20 + 5*2 if scrW > 20 + 5 * 2 else 0
+			self.layout = Layout([col1sz, scrW - col1sz], fill_frame=True)
+			self.add_layout(self.layout)
+			self.layout.add_widget(self.image, 0)
+			self.layout.add_widget(self.text, 1)
+		else:
+			self.layout = Layout([1], fill_frame=True)
+			self.add_layout(self.layout)
+			self.layout.add_widget(self.text, 0)
+		self.addDownBar()
+		self.fix()
+		self.text.focus()
 
 	def process_event(self, event):
 		if isinstance(event, KeyboardEvent):
 			if event.key_code in [ord('q'), ord('Q'), Screen.ctrl("c")]:
 				raise StopApplication("User quit")
+			if event.key_code in [ord(' ')]:
+				self.showImage = not self.showImage
+				self.createLayout()
+				return None
 			if event.key_code in [ord("i")]:
 				self._scene.add_effect(
 					InfoDialog(self._screen, 
@@ -75,21 +85,40 @@ class LyricsFrame(CustomFrame):
 		self.text.setText(text)
 
 	def updateArtistSong(self):
-		if self.presenter != None and \
-			(self.artist != self.presenter.playerGetCurTag().artist\
-			or self.song != self.presenter.playerGetCurTag().song):
-			
-			self.artist = self.presenter.playerGetCurTag().artist
-			self.song = self.presenter.playerGetCurTag().song
-		id = self.artist + self.song
+		if not self.presenter.song:
+			return True
+		id = self.presenter.song.artist + self.presenter.song.song
 		if id in self.lyricsCache:
 			self.setText(self.lyricsCache[id])
 			return True
 		return False
 
+	def updateCover(self):
+		if self.showImage == False:
+			return True
+		
+		song = self.presenter.song
+		if not song:
+			return True
+
+		path = "cache/" + song.artist + '_' + song.album + '_album.png'
+		if os.path.exists(path):
+			self.image.setImage(path, 20, 5, 5)
+			return True
+		return False
+
 	def updateLyricsCb(self, text, artist, song):
-		self.lyricsCache[artist+song] = text
-		if self.artist == artist and self.song == song:
+		if text != '':
+			self.lyricsCache[artist+song] = text
+		if self.presenter.song and self.presenter.song.artist == artist and self.presenter.song.song == song:
 			self.setText(text)
 		else:
 			self.presenter.lyricsUpdateText()
+
+	def updateCoverCb(self, path, artist, song):
+		if path == '':
+			path = "cache/defAlbum.ico"
+		if self.presenter.song and self.presenter.song.artist == artist and self.presenter.song.song == song:
+			self.image.setImage(path, 20, 5, 5)
+		else:
+			self.presenter.lyricsUpdateCover()

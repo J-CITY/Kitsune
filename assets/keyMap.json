@@ -1,0 +1,6 @@
+{
+    "EXIT": ["q", "Q", "Ctrl|c"],
+    "INFO": [],
+    "PLAY_PAUSE": ["p"],
+    "STOP": ["S"]
+}

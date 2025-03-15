@@ -1,6 +1,5 @@
 from core.utils import log, LogLevel
 from core.tag_controller import loadPlaylist, savePlaylist
-import time
 import asyncio, threading
 import collections
 from core.db import *
@@ -62,10 +61,27 @@ def initYandexMusic(config):
 	player.setGetYandexMusicUrlCb(ym.getTrackUrl)
 	return ym
 
+def initPlayer():
+	data = None
+	if os.path.exists("cache/player.json"):
+		import json
+		data = json.load("cache/player.json")
+	return Player(config, data)
+
+def savePlayerCache():
+	import json
+	data = {
+		"crossfade": player.crossfade,
+		"mode": player.mode,
+		"trackId": player.playlistId
+	}
+	with open('data.json', 'w') as f:
+		json.dump(data, f)
+
 config = initConfig()
 initDirs(config)
 db = initDb(config)
-player = Player(config)
+player = initPlayer()
 lyrics = initLyrics(config)
 lastfm = initLastfm(config)
 yaMusic = initYandexMusic(config)
@@ -409,8 +425,8 @@ class CallbackServer(object):
 		return text
 	
 	@expose
-	def lastfmGetCover(self, artist, song, ymId = None):
-		if artist == '' or song == '':
+	def lastfmGetCover(self, artist, album, ymId = None):
+		if artist == '' or album == '':
 			return ''
 		path = ''
 		if ymId and yaMusic:
@@ -418,7 +434,7 @@ class CallbackServer(object):
 			if len(path > 0):
 				return path
 		if lastfm:
-			path = lastfm.saveAlbumArt(artist, song)
+			path = lastfm.saveAlbumArt(artist, album)
 		return path
 
 	@expose
@@ -449,7 +465,6 @@ class CallbackServer(object):
 	def yandexMusicGetTracks(self, ids):
 		if yaMusic is None:
 			return []
-		print("yandexMusicGetTracks")
 		return yaMusic.getTracks(ids)
 
 	@expose
@@ -474,6 +489,18 @@ class CallbackServer(object):
 			# Add to medialib
 			db.insertByPath(path)
 
+	@expose
+	def yandexMusicSearchTrack(self, query):
+		if yaMusic is None:
+			return []
+		searchTracks = yaMusic.searchSong(query)
+		ids = []
+		for t in searchTracks['tracks']:
+			ids.append(t['id'])
+		return self.yandexMusicGetTracks(ids)
+
+	@expose
+	@oneway
 	def openMusicFile(self, path):
 		path = os.path.join(self.config.cache_folder, 'cache.json')
 		playlist = loadPlaylist(path)
@@ -486,6 +513,8 @@ class CallbackServer(object):
 		player.playlist = playlist
 		player.play()
 
+	@expose
+	@oneway
 	def playerSavePlaylist(self):
 		path = os.path.join(self.config.cache_folder, 'cache.json')
 		savePlaylist(player.playlist, path)
@@ -512,7 +541,7 @@ threadPlayer.start()
 serve({
 	CallbackServer: "kitsune.music.daemon"
 })
-
+savePlayerCache()
 #import Pyro5.api
 #
 #@Pyro5.api.expose

@@ -11,6 +11,8 @@ from enum import Enum
 from typing import NoReturn, Dict, Optional
 from core.tag_controller import Tag, Playlist, getTagFromPath, setTagForPath, playlist_class_to_dict, playlist_dict_to_class
 from core.strings import *
+from core.locale import LocaleConfig
+from core.keyboard import Keyboard
 
 PLAYLIST_CURRENT = 'current'
 
@@ -36,6 +38,10 @@ requestsQueue = []
 class ReuestEnum:
 	YM_GET_FAVORITES = 0
 	GET_LYRICS = 1
+	LOAD_COVER = 2
+	GET_ARTISI_BIO = 3
+	SEARCH_YM_TRACKS = 4
+	LOAD_YM_PLAYLIST = 5
 
 class Presenter:
 	def __init__(self, config):#+
@@ -65,6 +71,9 @@ class Presenter:
 		self.musicRootFolder = self.server.getMusicRootDir()
 		self.downloadFolder = self.server.getDownloadDir()
 		self.playlistFolder = self.server.getPlaylistDir()
+
+		self.locale = LocaleConfig(self.config)
+		self.keyboard = Keyboard(self.config)
 
 	def getUseInternet(self):
 		return self.useInternet
@@ -242,9 +251,6 @@ class Presenter:
 				e.id+=1
 
 		if playlistName == PLAYLIST_CURRENT:
-			print(playlist.tracks)
-			for t in playlist.tracks:
-				print('!', t.type)
 			self.server.playerSetCurrentPlaylistTracks(playlist.tracks)
 			self.song = tag
 			self.frames[FRAME_MAIN_PLAYLIST].table.updateList(playlist.tracks)
@@ -281,6 +287,7 @@ class Presenter:
 			tag = localserver.playerGetCurrentTagWithLength()
 			self.frames[FRAME_MAIN_PLAYLIST].table.playId = tag.id
 			self.song = tag
+			self.mainPlaylistUpdateCover()
 			#print(self.song)
 			if self.song != None:
 				tag = {
@@ -415,25 +422,16 @@ class Presenter:
 	def barGetFrameName(self):#+
 		return self.upBar.getFrameName()
 
-	def artistinfoUpdateTextAsync(self, artist, server = None):
-		if server:
-			localserver = server
-		else:
-			localserver = Proxy("PYRONAME:kitsune.music.daemon")
-		text = localserver.lastfmGetArtistBio(artist)
-		if (self.frames[FRAME_ARTIST_INFO].artist == artist):
-			self.frames[FRAME_ARTIST_INFO].setText(text)
-		else:
-			self.artistinfoUpdateTextAsync(self.frames[FRAME_ARTIST_INFO].artist, localserver)
-
 	def artistinfoUpdateText(self):#+
-		#if not self.useInternet:
-		#	return ''
+		if not self.useInternet:
+			return ''
 		if self.frames[FRAME_ARTIST_INFO].updateArtist():
 			return
-		thread = threading.Thread(target=self.artistinfoUpdateTextAsync, args=(self.frames[FRAME_ARTIST_INFO].artist,))
-		thread.daemon = True
-		thread.start()
+
+		r = Request(ReuestEnum.GET_ARTISI_BIO, 
+			{'artist': self.song.artist}, 
+			self.frames[FRAME_ARTIST_INFO].updateArtistCb)
+		self.addRequest(r)
 
 	def lyricsUpdateTextAsync(self, artist, song, server = None):
 		if server:
@@ -447,19 +445,34 @@ class Presenter:
 			self.lyricsUpdateTextAsync(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song, localserver)
 
 	def lyricsUpdateText(self):#+
-		#if not self.useInternet:
-		#	return
+		if not self.useInternet:
+			return
 		if self.frames[FRAME_LYRICS].updateArtistSong():
 			return
 		r = Request(ReuestEnum.GET_LYRICS, 
-			{'artist': self.frames[FRAME_LYRICS].artist, 'song': self.frames[FRAME_LYRICS].song}, 
+			{'artist': self.song.artist, 'song': self.song.song}, 
 			self.frames[FRAME_LYRICS].updateLyricsCb)
 		self.addRequest(r)
 
-		#thread = threading.Thread(target=self.lyricsUpdateTextAsync, \
-		#	args=(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song,))
-		#thread.daemon = True
-		#thread.start()
+	def lyricsUpdateCover(self):#+
+		if not self.useInternet:
+			return
+		if self.frames[FRAME_LYRICS].updateCover():
+			return
+		r = Request(ReuestEnum.LOAD_COVER, 
+			{'artist': self.song.artist, 'album': self.song.album, 'ymId': self.song.globalId if self.song.globalId != -1 else None}, 
+			self.frames[FRAME_LYRICS].updateCoverCb)
+		self.addRequest(r)
+
+	def mainPlaylistUpdateCover(self):#+
+		if not self.useInternet:
+			return
+		if self.frames[FRAME_MAIN_PLAYLIST].updateCover():
+			return
+		r = Request(ReuestEnum.LOAD_COVER, 
+			{'artist': self.song.artist, 'album': self.song.album, 'ymId': self.song.globalId if self.song.globalId != -1 else None}, 
+			self.frames[FRAME_MAIN_PLAYLIST].updateCoverCb)
+		self.addRequest(r)
 
 	def playerGetLen(self):#+
 		return self.server.playerGetSongLength()
@@ -476,6 +489,14 @@ class Presenter:
 	def getYandexMusicPlaylist(self, name):#+
 		return self.server.yandexMusicGetPlaylist(name)
 
+	def getYandexMusicPlaylistAsync(self, name):#+
+		if not self.useInternet:
+			return
+		r = Request(ReuestEnum.LOAD_YM_PLAYLIST, 
+			{'name': name}, 
+			self.frames[FRAME_PLAYLISTS].setCurrentPlaylistCb)
+		self.addRequest(r)
+
 	def getYandexMusicTrack(self, id):#+
 		return self.server.yandexMusicGetMusicTrack(id)
 	
@@ -487,6 +508,14 @@ class Presenter:
 
 	def loadYandexMusicTrack(self, id):#+
 		return self.server.yandexMusicDownloadTrack(id)
+
+	def searchYandexMusicTrack(self, query):
+		if not self.useInternet:
+			return
+		r = Request(ReuestEnum.SEARCH_YM_TRACKS, 
+			{'query': query}, 
+			self.frames[FRAME_SEARCH].ymSearchCb)
+		self.addRequest(r)
 
 	def isYandexMusicInit(self) -> bool:#+
 		return self.server.yandexMusicIsInit()
@@ -506,6 +535,23 @@ class Presenter:
 					case ReuestEnum.GET_LYRICS:
 						res = localserver.lyricsGetSongLyrics(r.payload["artist"], r.payload["song"])
 						r.callback(res, r.payload["artist"], r.payload["song"])
+					case ReuestEnum.GET_ARTISI_BIO:
+						res = localserver.lastfmGetArtistBio(r.payload["artist"])
+						r.callback(res, r.payload["artist"])
+					case ReuestEnum.LOAD_COVER:
+						res = localserver.lastfmGetCover(r.payload["artist"], r.payload["album"], r.payload["ymId"])
+						r.callback(res, r.payload["artist"], r.payload["album"])
+					case ReuestEnum.SEARCH_YM_TRACKS:
+						res = localserver.yandexMusicSearchTrack(r.payload["query"])
+						r.callback(res, r.payload["query"])
+					case ReuestEnum.LOAD_YM_PLAYLIST:
+						ympl = None
+						name =  r.payload["name"]
+						if  name == YANDEX_MUSIC_LIKES:
+							ympl = self.presenter.getYandexMusicFavorites()
+						else:
+							ympl = self.presenter.getYandexMusicPlaylist(name)
+						r.callback(res, ympl, name)
 			else:
 				time.sleep(0.500)
 

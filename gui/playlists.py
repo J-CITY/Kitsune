@@ -83,6 +83,25 @@ class PlaylistsFrame(CustomFrame):
 	def details(self):
 		pass
 
+	def swapSongwInPlaylist(self, playlistName, _from, _to):
+		e = self.curPlaylist.tracks[_from]
+		self.curPlaylist.tracks[_from] = self.curPlaylist.tracks[_to]
+		self.curPlaylist.tracks[_to] = e
+
+		e = self.curPlaylist.tracks[_from].id
+		self.curPlaylist.tracks[_from].id = self.curPlaylist.tracks[_to].id
+		self.curPlaylist.tracks[_to].id = e
+
+		_curPlaylist = []
+		for i, e in enumerate(self.curPlaylist.tracks):
+			_curPlaylist.append(([e.artist+" - "+e.song], i))
+		self.listPl._options = _curPlaylist
+
+		self.listPl._line = _to
+		self.listPl.value = self.listPl._options[self.listPl._line][1]
+		path = self.presenter.getPathOfPlaylist(playlistName)
+		savePlaylist(self.curPlaylist, path)
+
 	def process_event(self, event):
 		# Do the key handling for this Frame.
 		if isinstance(event, KeyboardEvent):
@@ -158,49 +177,14 @@ class PlaylistsFrame(CustomFrame):
 					if self.currentPlaylist.type == TrackType.LOCAL:
 						_from = self.listPl._line
 						_to = self.listPl._line-1 if self.listPl._line > 0 else self.listPl._line
-						#TODO: move in to func
-						e = self.curPlaylist.tracks[_from]
-						self.curPlaylist.tracks[_from] = self.curPlaylist.tracks[_to]
-						self.curPlaylist.tracks[_to] = e
-
-						e = self.curPlaylist.tracks[_from].id
-						self.curPlaylist.tracks[_from].id = self.curPlaylist.tracks[_to].id
-						self.curPlaylist.tracks[_to].id = e
-
-						_curPlaylist = []
-						for i, e in enumerate(self.curPlaylist.tracks):
-							_curPlaylist.append(([e.artist+" - "+e.song], i))
-						self.listPl._options = _curPlaylist
-
-						self.listPl._line = _to
-						self.listPl.value = self.listPl._options[self.listPl._line][1]
-						path = self.presenter.getPathOfPlaylist(playlistName)
-						savePlaylist(self.curPlaylist, path)
-						#TODO: move in to func end
+						self.swapSongwInPlaylist(playlistName, _from, _to)
 			if event.key_code in [ord('k')]:#swap
 				if self.listPl._has_focus:
 					playlistName = self.listPls._options[self.listPls._line][0][0]
 					if self.currentPlaylist.type == TrackType.LOCAL:
 						_from = self.listPl._line
 						_to = self.listPl._line+1 if self.listPl._line < len(self.listPl._options)-1 else self.listPl._line
-				
-						e = self.curPlaylist.tracks[_from]
-						self.curPlaylist.tracks[_from] = self.curPlaylist.tracks[_to]
-						self.curPlaylist.tracks[_to] = e
-
-						e = self.curPlaylist.tracks[_from].id
-						self.curPlaylist.tracks[_from].id = self.curPlaylist.tracks[_to].id
-						self.curPlaylist.tracks[_to].id = e
-						
-						_curPlaylist = []
-						for i, e in enumerate(self.curPlaylist.tracks):
-							_curPlaylist.append(([e.artist+" - "+e.song], i))
-						self.listPl._options = _curPlaylist
-
-						self.listPl._line = _to
-						self.listPl.value = self.listPl._options[self.listPl._line][1]
-						path = self.presenter.getPathOfPlaylist(playlistName)
-						savePlaylist(self.curPlaylist, path)
+						self.swapSongwInPlaylist(playlistName, _from, _to)
 			if event.key_code in [ord("i")]:
 				self._scene.add_effect(
 					InfoDialog(self._screen, 
@@ -268,55 +252,68 @@ class PlaylistsFrame(CustomFrame):
 		currentPlaylist = self.playlistsInfo[0]
 		self.setCurrentPlaylist(currentPlaylist)
 
+	def getYMPlaylistsTracks(self, name):
+		# Get tracks
+		ympl = self.shortPlaylistCache[name]
+		if name in self.fullPlaylistCache:
+			tracks = self.fullPlaylistCache[name]
+		else:
+			tracksId= []
+			for trackId in ympl['tracks']:
+				tracksId.append(trackId)
+			tracks = self.presenter.getYandexMusicGetTracks(tracksId)
+			self.fullPlaylistCache[name] = tracks
+
+	def _setCurrentPlaylist(self, name):
+		if self.currentPlaylist.name != name:
+			return
+		tracks = self.fullPlaylistCache[name]
+		self.curPlaylist = Playlist()
+		self.curPlaylist.name = name
+		_curPlaylist = []
+		for i, track in enumerate(tracks):
+			t = Tag()
+			t.type = TrackType.YANDEX_MUSIC
+			t.url = ''
+			for i, a in enumerate(track['albums']):
+				if i != 0:
+					t.album += ","
+				t.album += a
+			for i, a in enumerate(track['artists']):
+				if i != 0:
+					t.artist += ","
+				t.artist += a
+			t.song = track['title']
+			t.globalId = track['id']
+			t.ymHasLyrics = track['lyrics_available']
+			t.ymCoverUrl = track['cover_uri']
+			
+			_curPlaylist.append(([t.artist + " - " + t.song], i))
+			self.curPlaylist.tracks.append(t)
+		self.listPl._options = _curPlaylist
+		self.listPl.value = 0
+
+	def setCurrentPlaylistCb(self, ympl, name):
+		self.shortPlaylistCache[name] = ympl
+		self.getYMPlaylistsTracks(name)
+		self._setCurrentPlaylist(name)
+
 	def setCurrentPlaylist(self, currentPlaylist: PlaylistInfo) -> NoReturn:
 		# For YM playlist
 		if currentPlaylist.type == TrackType.YANDEX_MUSIC:
-			_curPlaylist = []
-			
 			# Get tracks ids
 			ympl = None
 			if currentPlaylist.name in self.shortPlaylistCache:
-				ympl = self.shortPlaylistCache[currentPlaylist.name]
+				self.getYMPlaylistsTracks(currentPlaylist.name)
+				self._setCurrentPlaylist(currentPlaylist.name)
 			else:
 				if currentPlaylist.name == YANDEX_MUSIC_LIKES:
 					ympl = self.presenter.getYandexMusicFavorites()
 				else:
 					ympl = self.presenter.getYandexMusicPlaylist(currentPlaylist.name)
-				self.shortPlaylistCache[currentPlaylist.name] = ympl
-
-			# Get tracks
-			if currentPlaylist.name in self.fullPlaylistCache:
-				tracks = self.fullPlaylistCache[currentPlaylist.name]
-			else:
-				tracksId= []
-				for trackId in ympl['tracks']:
-					tracksId.append(trackId)
-				tracks = self.presenter.getYandexMusicGetTracks(tracksId)
-				self.fullPlaylistCache[currentPlaylist.name] = tracks
-
-			self.curPlaylist = Playlist()
-			self.curPlaylist.name = currentPlaylist.name
-			for i, track in enumerate(tracks):
-				_curPlaylist.append((["-" + track['title']], i))
-				t = Tag()
-				t.type = TrackType.YANDEX_MUSIC
-				t.url = ''
-				for i, a in enumerate(track['albums']):
-					if i != 0:
-						t.album += ","
-					t.album += a
-				for i, a in enumerate(track['artists']):
-					if i != 0:
-						t.artist += ","
-					t.artist += a
-				t.song = track['title']
-				t.globalId = track['id']
-				t.ymHasLyrics = track['lyrics_available']
-				t.ymCoverUrl = track['cover_uri']
-				self.curPlaylist.tracks.append(t)
-			self.listPl._options = _curPlaylist
-			self.listPl.value = 0
-			return
+				#self.shortPlaylistCache[currentPlaylist.name] = ympl
+			self.presenter.getYandexMusicPlaylist
+			return ympl
 
 		# For local playlist
 		path = os.path.join(self.presenter.getPlaylistFolder(), currentPlaylist.name)

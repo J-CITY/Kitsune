@@ -10,5 +10,8 @@
     "add.song": "Add song",
     "add.playlist": "Add playlist",
     "playlists": "Playlists",
-    "playlist": "Playlist"
+    "playlist": "Playlist",
+    "title.songs": "Songs",
+    "title.albums": "Albums",
+    "title.artists": "Artists"
 }

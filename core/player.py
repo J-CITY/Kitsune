@@ -11,7 +11,7 @@ from core.tag_controller import *
 from multiprocessing import Process
 from core.strings import OS_LINUX, OS_WIN
 
-#TODO: Add YM Flow
+#TODO not now: Add YM Flow (maybe my albums)
 
 class PlayMode:
 	MOD_ONE_SONG = 0
@@ -24,7 +24,7 @@ BASS_ATTRIB_TEMPO = 0x10000
 BASS_FX_FREESOURCE = 0x10000
 
 class Player:
-	def __init__(self, config):
+	def __init__(self, config, playerCache):
 		# load dll/so
 		if platform.system() == OS_LINUX:
 			self.fx_module  = ctypes.cdll.LoadLibrary("libc.so.6")
@@ -48,12 +48,9 @@ class Player:
 		path = os.path.join(config.cache_folder, "cache.json")
 		self.playlist = loadPlaylist(path)
 
-		# TODO: save to cache id, mode, crossfate, and add def values to config
 		self.playlistId = 0
 		self.isPlay = False
-		self.mode = 0
 		self.modeId = 0
-		self.crossfade = False
 		self.cfParam = config.player_cossfade_duration
 		self.volume = BASS_GetVolume()
 		
@@ -69,9 +66,16 @@ class Player:
 			m = dictModes.get(mstr, None)
 			if m:
 				self.modes.append(m)
-			pass
 		if self.modes == []:
 			self.modes = [PlayMode.MOD_PLAYLIST_CIRCLE]
+		self.mode = self.modes[0]
+
+		if playerCache:
+			self.crossfade = playerCache["crossfade"]
+			if playerCache["mode"] in self.modes:
+				self.mode = playerCache["mode"]
+			if len(self.playlist.tracks) > playerCache["trackId"]:
+				self.playlistId = playerCache["trackId"]
 
 		self.moveStep = config.player_move_step
 
@@ -152,16 +156,15 @@ class Player:
 
 	def playOnline(self):
 		trackUrl = None
-		if self.getYandexMusicUrlCb:
-			print('try get url')
+		if self.getYandexMusicUrlCb and self.playlist.tracks[self.playlistId].globalId:
 			trackUrl = self.getYandexMusicUrlCb(self.playlist.tracks[self.playlistId].globalId)
-		print('url', trackUrl)
+		#print('url', trackUrl)
 		if trackUrl is not None:
 			fxch = BASS_StreamCreateURL(trackUrl.encode("utf-8"), False, BASS_STREAM_DECODE, DOWNLOADPROC(), 0)
 			self.streams[self.streamsId] = self.BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
 
 	def play(self):
-		print("play")
+		#print("play")
 		self.isPlay = True
 		#BASS_ChannelStop(self.streams[self.streamsId])
 		
@@ -170,7 +173,7 @@ class Player:
 		if len(self.playlist.tracks) > self.playlistId:
 			track = self.playlist.tracks[self.playlistId]
 			_url = track.url
-		print('type', track.type)
+		#print('type', track.type)
 		#BASS_ChannelStop(self.streams[self.streamsId])
 		#BASS_StreamFree
 		if _url.startswith('http') or _url.startswith('ftp'):

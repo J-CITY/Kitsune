@@ -46,7 +46,7 @@ class MedialibFrame(CustomFrame):
 			[self.color_choice],
 			[],
 			titles=[titleArtist],
-			name="Artists", on_change=self._on_change_artist)
+			name=presenter.locale.getText("title.artists"), on_change=self._on_change_artist)
 		self.listArtists.choiceCh = presenter.config.main_playlist.choice_char
 		self.listArtists.itemCh = presenter.config.main_playlist.item_char
 		layout.add_widget(self.listArtists, 0)
@@ -58,7 +58,7 @@ class MedialibFrame(CustomFrame):
 			[self.color_not_focus],
 			[],
 			titles=[titleAlbum],
-			name="Albums", on_change=self._on_change_album, on_select=self.openAlbum)
+			name=presenter.locale.getText("title.albums"), on_change=self._on_change_album, on_select=self.openAlbum)
 		self.listAlbums.choiceCh = presenter.config.main_playlist.choice_char
 		self.listAlbums.itemCh = presenter.config.main_playlist.item_char
 		layout.add_widget(self.listAlbums, 1)
@@ -70,7 +70,7 @@ class MedialibFrame(CustomFrame):
 			[self.color_not_focus],
 			[],
 			titles=[titleSong],
-			name="Songs", on_select=self.addSong)
+			name=presenter.locale.getText("title.songs"), on_select=self.addSong)
 		self.listSongs.choiceCh = presenter.config.main_playlist.choice_char
 		self.listSongs.itemCh = presenter.config.main_playlist.item_char
 		layout.add_widget(self.listSongs, 2)
