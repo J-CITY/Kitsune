@@ -62,6 +62,10 @@ pip install yandex-music pylast requests music_tag pillow term_image
 python ./kitsuneCli.py -db
 ```
 
+## API keys
+
+For artist bio and Yandex music you need get api kays
+
 # Screenshots
 
 Main playlist:
