@@ -1,6 +1,6 @@
 # Kitsune - music player daemon with text user interface client
 
-![Screenshot](https://github.com/J-CITY/Kitsune/blob/master/screens/main0.png)
+![Screenshot](https://github.com/J-CITY/Kitsune/blob/daemon/screens/main0.png)
 
 ## Description
 Powerful console music player written with Python.
@@ -70,37 +70,37 @@ For artist bio and Yandex music you need get api kays
 
 Main playlist:
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/main0.png)
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/main1.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/main0.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/main1.png)
 
 Browser
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/browser.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/browser.png)
 
 Playlists
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/playlists.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/playlists.png)
 
 Medialib
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/medialib.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/medialib.png)
 
 Equalizer
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/eq.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/eq.png)
 
 Artist info
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/bio.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/bio.png)
 
 Lirycs
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/lyrics.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/lyrics.png)
 
 Clock
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/clock.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/clock.png)
 
 Visualization
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/viz.gif)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/daemon/screens/viz.gif)
