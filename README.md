@@ -1,126 +1,102 @@
-Kitsune - console music player
+# Kitsune - music player daemon with text user interface client
 
+![Screenshot](https://github.com/J-CITY/Kitsune/blob/master/screens/main0.png)
 
-Powerful console music player.
-
-![Screenshot](https://github.com/J-CITY/Kitsune/blob/master/screens/main.png)
-
-# Description
+## Description
 Powerful console music player written with Python.
+
+### Features
+
+- Make playlists
+- Show artist bio
+- Show song lyrics
+- Play Yandex Music favorites and playlists
+- Fully customization (See configs in `./assets`)
+- Equalizer
+- Local music library
+- Music file browser
+- Music visualization
+- Clock
 
 I think this should work on Linux, but I have not tested ¯\\_(ツ)_/¯
 
+
+## Start daemon
+
+### 1. Start pyro5 name server
+
+```
+python -m Pyro5.nameserver
+```
+
+### 2. Start daemon
+
+```
+python ./kitsuneDaemon.py
+```
+
+## Start client
+
+```
+python ./kitsunePlayer.py
+```
+
+
 # Dependencies (Python x64)
-* use BASSlib
 
-* soundcloud
-* yandexmusic api
-* asciimatics
-* tinytag
-* six
-* pylast
-* PyLyrics
-* urllib
-* [tinyWinToast](https://github.com/J-CITY/tinyWinToast "tinyWinToast") or ([notify2](https://pypi.org/project/notify2/ "notify2") for linux)
+## Unnecessary
 
-# Usage
+```
+pip install asciimatics wcwidth six Pyro5 pybass numpy
+```
 
-See "config" to get information about player configuration.
+## Necessary
 
-To make it work, fill in config fields "sound_cloud" and "lastfm" and delete all //comments
+```
+pip install yandex-music pylast requests music_tag pillow term_image
+```
 
-Run main.py -db to create sungs database
+## Create local media lib (Run after start daemon)
 
-Press `i` in any tab to see shortcuts.
-
-# Features
-
-* equalizer
-* Music library (use db)
-* Music browser
-* Playlists (local and from SC)
-* Artist information
-* Lyrics
-* Soundcloud
-* Yandex Music
-* Can change appearance with config
-* Clock with mani ascii fonts
-* Music visualization
-
-# TODO
-
-* Refactor
-* Fix bugs
+```
+python ./kitsuneCli.py -db
+```
 
 # Screenshots
 
 Main playlist:
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/0.jpg)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/main0.png)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/main1.png)
 
 Browser
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/1.jpg)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/browser.png)
 
 Playlists
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/2.jpg)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/playlists.png)
 
 Medialib
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/3.jpg)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/medialib.png)
 
 Equalizer
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/4.jpg)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/eq.png)
 
 Artist info
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/5.jpg)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/bio.png)
 
 Lirycs
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/6.jpg)
-
-Search
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/7.jpg)
-
-Clock binary
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/8.jpg)
-
-Info
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/9.jpg)
-
-Add song to playlist dialog
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/10.jpg)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/lyrics.png)
 
 Clock
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/11.jpg)
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/clock.png)
 
 Visualization
 
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/0.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/12.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/13.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/14.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/15.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/16.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/17.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/18.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/19.jpg)
-
-![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/20.jpg)
-
+![Imgur](https://github.com/J-CITY/Kitsune/blob/master/screens/viz.gif)
