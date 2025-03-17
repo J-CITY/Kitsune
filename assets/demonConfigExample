@@ -3,7 +3,7 @@
 	"cache_folder": "PATH_TO_CASH_FOLDER",
 	"playlist_folder": "playlists",
 	"download_folder": "PATH_TO_MUSIC_DOWNLOAD_FOLDER",
-	"music_root_dir":"PATH_TO_MUSIC_FOLDER",
+	"music_root_folder":"PATH_TO_MUSIC_FOLDER",
 	"yandex_music": {
 		"token": ""
 	},

@@ -3,7 +3,7 @@
 	"cache_folder": "cache",
 	"playlist_folder": "playlists",
 	"download_folder": "D:/music/downloads",
-	"music_root_dir":"D:/music",
+	"music_root_folder":"D:/music",
 	"yandex_music": {
 		"token": ""
 	},
@@ -19,7 +19,10 @@
 		"apikey": "",
 		"lang": "en"
 	},
-	"lirycsApi": {
+	"lirycs": {
 		"apikey": ""
-	}
+	},
+	"player_move_step": 5,
+	"player_cossfade_duration": 5,
+	"player_modes": ["MOD_ONE_SONG", "MOD_SONG_CIRCLE", "MOD_ONE_PLAYLIST", "MOD_PLAYLIST_CIRCLE", "MOD_PLAYLIST_RANDOM"]
 }
