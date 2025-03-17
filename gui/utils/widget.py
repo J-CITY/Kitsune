@@ -40,6 +40,12 @@ class CustomLabel(Widget):
 		self.needUpdate = False
 		self.divider = divider
 
+		self.start_char = None
+		self.prev_char = None
+		self.cur_char = None
+		self.next_char = None
+		self.end_char = None
+
 
 	def process_event(self, event):
 		return event
@@ -70,8 +76,20 @@ class CustomLabel(Widget):
 				if len(t) > 0 and t[0]=='%':
 					self.labels[i] = t[1:]
 				elif t == "progress":
-					self.labels[i] = self.getProgress(self.tag["curLength"], self.tag["length"], self.start_char, 
+					#self.labels[i] = self.getProgress(self.tag["curLength"], self.tag["length"], self.start_char, 
+					#		self.prev_char, self.cur_char, self.next_char, self.end_char)
+					#color = self.colors[i]
+					self.labels = []
+					self.colors = []
+					res = self.getProgress2(self.tag["curLength"], self.tag["length"], self.start_char, 
 							self.prev_char, self.cur_char, self.next_char, self.end_char)
+					toColot = [self.start_char_color, self.prev_char_color, self.cur_char_color, self.next_char_color, self.end_char_color]
+					for i, r in enumerate(res):
+						if r == '':
+							continue
+						self.labels.append(r)
+						self.colors.append(toColot[i])
+					break
 				elif t == "mode":
 					self.labels[i] = self.getMode(self.tag["mode"], self.tag["crossfade"])
 				elif t == "curLength" or t == "length":
@@ -178,6 +196,30 @@ class CustomLabel(Widget):
 		self.cur_char = cur_char
 		self.next_char = next_char
 		self.end_char = end_char
+
+	def updateLable2(self, tag, start_char, prev_char, cur_char, next_char, end_char, start_char_color, prev_char_color, cur_char_color, next_char_color, end_char_color):
+		self.needUpdate = True
+		
+		self.tag = tag
+
+		if self.start_char is not None:
+			return
+		self.start_char = start_char
+		self.prev_char = prev_char
+		self.cur_char = cur_char
+		self.next_char = next_char
+		self.end_char = end_char
+
+		c = start_char_color.split(':')
+		self.start_char_color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
+		c = prev_char_color.split(':')
+		self.prev_char_color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
+		c = cur_char_color.split(':')
+		self.cur_char_color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
+		c = next_char_color.split(':')
+		self.next_char_color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
+		c = end_char_color.split(':')
+		self.end_char_color = ColorTheme(getColor(c[0]), getAttr(c[1]), getColor(c[2]))
 	
 	def getProgress(self, cur, length, start_char, prev_char, cur_char, next_char, end_char):
 		res = start_char
@@ -195,9 +237,28 @@ class CustomLabel(Widget):
 		if end_char != '':
 			res[len(res)-1] = end_char
 		return res
-	#def frame_update_count(self):
-	#	super(CustomLabel, self).frame_update_count()
-	#	return 1
+	
+	def getProgress2(self, cur, length, start_char, prev_char, cur_char, next_char, end_char):
+		res = ['', '', '', '', '']
+		res[0] = start_char
+		if length == 0:
+			pos = 0
+		else:
+			pos = int(cur*self._w/length)
+		for i in range(0, self._w):
+			if (i < pos):
+				res[1] += prev_char
+			if (i > pos):
+				res[3] += next_char
+			if (i == pos):
+				res[2] += cur_char
+		if end_char != '':
+			if res[3] != '':
+				res[3] = res[-1][:-1]
+			else:
+				res[1] = res[-1][:-1]
+			res[4] = end_char
+		return res
 
 class _BaseListBox(with_metaclass(ABCMeta, Widget)):
 

@@ -20,6 +20,12 @@ class Bar:
 		self.cur_char = jstr.bar.cur_char
 		self.end_char = jstr.bar.end_char
 
+		self.start_char_color = jstr.bar.start_char_color
+		self.prev_char_color = jstr.bar.prev_char_color
+		self.next_char_color = jstr.bar.next_char_color
+		self.cur_char_color = jstr.bar.cur_char_color
+		self.end_char_color = jstr.bar.end_char_color
+
 		if b == UP_BAR:
 			bar = jstr.upBar
 		else:
@@ -58,7 +64,9 @@ class Bar:
 			
 	def update(self, tag):
 		for l in self.lables:
-			l.updateLable(tag, self.start_char, self.prev_char, self.cur_char, self.next_char, self.end_char)
+			#l.updateLable(tag, self.start_char, self.prev_char, self.cur_char, self.next_char, self.end_char)
+			l.updateLable2(tag, self.start_char, self.prev_char, self.cur_char, self.next_char, self.end_char,
+				 self.start_char_color, self.prev_char_color, self.cur_char_color, self.next_char_color, self.end_char_color)
 
 	def setFrame(self, f):
 		for l in self.lables:
