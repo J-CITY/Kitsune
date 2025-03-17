@@ -48,7 +48,61 @@ class YandexMusicClient:
 		for i, song in enumerate(result.tracks):
 			playlist["tracks"].append(song.id)
 		return playlist
-	
+
+	def getAlbums(self):
+		self.client.albums_with_tracks
+		if not self.isInit:
+			return None
+		result = self.client.users_likes_albums()
+		playlists = []
+		for p in result:
+			playlist = {"title": p.album.title, "tracks": []}
+			albumWithTracks = p.album.with_tracks()
+			for songList in albumWithTracks.volumes:
+				for song in songList:
+					playlist["tracks"].append(song.id)
+			playlists.append(playlist)
+		return playlists
+
+	def _getAlbums(self):
+		if not self.isInit:
+			return None
+		return self.client.users_likes_albums()
+
+	def getAlbum(self, name):
+		if not self.isInit:
+			return None
+		playlists = self._getAlbums()
+		playlist = next((p for p in playlists if p.album.title == name), None)
+		if playlist is None:
+			log(LogLevel.ERROR, f'Yandex music album "{name}" not found')
+			return []
+
+		#self.client.albums_with_tracks
+
+		_playlist = {"title": name, "tracks": []}
+		albumWithTracks = playlist.album.with_tracks()
+		for songList in albumWithTracks.album.volumes:
+			for song in songList:
+				_playlist["tracks"].append(song.id)
+
+		return _playlist
+
+	def getAlbumById(self, id):
+		if not self.isInit:
+			return None
+
+		playlist = self.client.albums_with_tracks(id)
+		if playlist is None:
+			return None
+
+		_playlist = {"title": playlist.title, "tracks": []}
+		for songList in playlist.volumes:
+			for song in songList:
+				_playlist["tracks"].append(song.id)
+
+		return _playlist
+
 	def getPlaylists(self):
 		if not self.isInit:
 			return None
@@ -82,7 +136,7 @@ class YandexMusicClient:
 		_playlist = {"title": name, "tracks": tracks}
 		return _playlist
 
-	def getPlaylist(self, id):
+	def getPlaylistById(self, id):
 		if not self.isInit:
 			return None
 
@@ -210,9 +264,10 @@ class YandexMusicClient:
 	def getLyrics(self, id):
 		if not self.isInit:
 			return ''
-		result = self.client.tra(id)
+		result = self.client.tracks_lyrics(id)
 		if result:
 			return result.fetch_lyrics()
+		print("YM lyrics not found")
 		return ''
 
 	def saveCover(self, artist, album, id, cacheFolder, size: str = '200x200'):
@@ -268,7 +323,7 @@ class YandexMusicClient:
 		result['artists'] = self._getArtists(searchResult)
 		result['albums'] = self._getAlbums(searchResult)
 		result['tracks'] = self._getTracks(searchResult)
-		result['playlists'] = self._getPlaylists(searchResult)
+		result['playlists'] = self._getPlaylistsSearch(searchResult)
 		return result
 
 	def _getArtists(self, searchResult):
@@ -294,7 +349,7 @@ class YandexMusicClient:
 				tracks.append({'id': track.id, 'name': track.name})
 			return tracks
 
-	def _getPlaylists(self, searchResult):
+	def _getPlaylistsSearch(self, searchResult):
 		if searchResult.playlists:
 			playlists = []
 			for playlist in searchResult.playlists.results:
@@ -330,6 +385,6 @@ class YandexMusicClient:
 			return None
 		searchResult = self.client.search(query)
 		result = {}
-		result['playlists'] = self._getPlaylists(searchResult)
+		result['playlists'] = self._getPlaylistsSearch(searchResult)
 		return result
 

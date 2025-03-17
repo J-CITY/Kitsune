@@ -30,7 +30,7 @@ async def getArtistInfoAsinc(callback):
 	callback.call("Some lirics")
 	print("getLiricsAsinc done")
 
-CONFIG = 'daemonConfig'
+CONFIG = './assets/daemonConfig'
 
 def initConfig():
 	import json
@@ -65,7 +65,8 @@ def initPlayer():
 	data = None
 	if os.path.exists("cache/player.json"):
 		import json
-		data = json.load("cache/player.json")
+		with open('cache/player.json') as f:
+			data = json.load(f)
 	return Player(config, data)
 
 def savePlayerCache():
@@ -75,7 +76,7 @@ def savePlayerCache():
 		"mode": player.mode,
 		"trackId": player.playlistId
 	}
-	with open('data.json', 'w') as f:
+	with open('cache/player.json', 'w') as f:
 		json.dump(data, f)
 
 config = initConfig()
@@ -242,6 +243,7 @@ class CallbackServer(object):
 
 	@expose
 	def playerPlayById(self, id):
+		print("playerPlayById")
 		if len(player.playlist.tracks) > id:
 			tag = player.playlist.tracks[id]
 			tag.length = player.getLen()
@@ -406,7 +408,7 @@ class CallbackServer(object):
 		text = ''
 		if ymId and yaMusic:
 			text = yaMusic.getLyrics(ymId)
-			if len(text > 0):
+			if len(text) > 0:
 				return text
 
 		if lyrics:
@@ -430,8 +432,8 @@ class CallbackServer(object):
 			return ''
 		path = ''
 		if ymId and yaMusic:
-			path = yaMusic.saveCover(ymId)
-			if len(path > 0):
+			path = yaMusic.saveCover(artist, album, ymId, config.cache_folder)
+			if len(path) > 0:
 				return path
 		if lastfm:
 			path = lastfm.saveAlbumArt(artist, album)
@@ -454,6 +456,19 @@ class CallbackServer(object):
 		if yaMusic is None:
 			return None
 		return yaMusic.getPlaylist(name)
+
+	@expose
+	def yandexMusicGetAlbums(self):
+		if yaMusic is None:
+			return []
+		return yaMusic.getAlbums()
+
+	@expose
+	def yandexMusicGetAlbum(self, name):
+		if yaMusic is None:
+			return None
+		return yaMusic.getAlbum(name)
+
 
 	@expose
 	def yandexMusicGetMusicTrack(self, id):

@@ -20,11 +20,12 @@ from gui.dialog import AddMusicDialog
 from gui.dialog_info import InfoDialog
 from core.strings import *
 from typing import List, NoReturn
-
+#TODO: call async ym methods
 class PlaylistInfo:
-	def __init__(self, t, n) -> NoReturn:
+	def __init__(self, t, n, plt='local') -> NoReturn:
 		self.type: TrackType = t
 		self.name: str = n
+		self.pltype = plt # for ym is playlist or album
 
 class PlaylistsFrame(CustomFrame):
 	def __init__(self, screen, upBar, downBar, presenter):
@@ -237,12 +238,21 @@ class PlaylistsFrame(CustomFrame):
 			ympls = self.presenter.getYandexMusicPlaylists()
 			for p in ympls:
 				ymList += [p["title"]]
+				p['type'] = 'playlist'
 				if len(p['tracks']) > 0:
 					self.shortPlaylistCache[p["title"]] = p
 
+			#TODO: it is works fine, but need async
+			#ympls = self.presenter.getYandexMusicAlbums()
+			#for p in ympls:
+			#	ymList += [p["title"]]
+			#	p['type'] = 'album'
+			#	if len(p['tracks']) > 0:
+			#		self.shortPlaylistCache[p["title"]] = p
+
 			for i, e in enumerate(ymList):
 				tableOptions.append(([e], len(tableOptions)))
-				self.playlistsInfo.append(PlaylistInfo(TrackType.YANDEX_MUSIC, e))
+				self.playlistsInfo.append(PlaylistInfo(TrackType.YANDEX_MUSIC, e, p['type']))
 
 		self.listPls._options = tableOptions
 		self.listPls.value = 0
@@ -263,6 +273,7 @@ class PlaylistsFrame(CustomFrame):
 				tracksId.append(trackId)
 			tracks = self.presenter.getYandexMusicGetTracks(tracksId)
 			self.fullPlaylistCache[name] = tracks
+		#return tracks
 
 	def _setCurrentPlaylist(self, name):
 		if self.currentPlaylist.name != name:
@@ -310,10 +321,14 @@ class PlaylistsFrame(CustomFrame):
 				if currentPlaylist.name == YANDEX_MUSIC_LIKES:
 					ympl = self.presenter.getYandexMusicFavorites()
 				else:
-					ympl = self.presenter.getYandexMusicPlaylist(currentPlaylist.name)
-				#self.shortPlaylistCache[currentPlaylist.name] = ympl
-			self.presenter.getYandexMusicPlaylist
-			return ympl
+					if currentPlaylist.pltype == 'album':
+						ympl = self.presenter.getYandexMusicAlbum(currentPlaylist.name)
+					else:
+						ympl = self.presenter.getYandexMusicPlaylist(currentPlaylist.name)
+				self.shortPlaylistCache[currentPlaylist.name] = ympl
+				self.getYMPlaylistsTracks(currentPlaylist.name)
+				self._setCurrentPlaylist(currentPlaylist.name)
+			return
 
 		# For local playlist
 		path = os.path.join(self.presenter.getPlaylistFolder(), currentPlaylist.name)

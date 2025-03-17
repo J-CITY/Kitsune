@@ -22,7 +22,7 @@ except ImportError or ModuleNotFoundError:
 	exit(1)
 from core.strings import *
 
-CONFIG_PATH = 'config'
+CONFIG_PATH = './assets/config'
 
 config = None
 presenter = None
@@ -46,24 +46,6 @@ def init(screen, oldScene):
 	downBar = Bar()
 	downBar.parse(config, DOWN_BAR)
 
-	#medialib = MedialibFrame(screen, upBar, downBar, config)
-	#medialib.setPresenter(presenter)
-	#
-	#playlists = PlaylistsFrame(screen, upBar, downBar, config)
-	#playlists.setPresenter(presenter)
-	#
-	#equalizer = EqualizerFrame(screen, upBar, downBar, config)
-	#equalizer.setPresenter(presenter)
-	#
-	#viz = VisualizationFrame(screen, upBar, downBar, config)
-	#viz.setPresenter(presenter)
-	#
-	#clock = ClockFrame(screen, upBar, downBar, config)
-	#clock.setPresenter(presenter)
-	#
-	#search = SearchFrame(screen, upBar, downBar, config)
-	#search.setPresenter(presenter)
-	
 	presenter.setUpBar(upBar)
 	presenter.setDownBar(downBar)
 
@@ -77,7 +59,8 @@ def init(screen, oldScene):
 		screens.append(Scene([s], -1, name=screenName))
 
 	presenter.setFrameToBars('MainPlaylist')
-	presenter.frames[FRAME_LYRICS].text.screen = screen
+	if FRAME_EQUALIZER in presenter.frames:
+		presenter.frames[FRAME_LYRICS].text.screen = screen
 
 	screen.play(screens, stop_on_resize=True, start_scene=oldScene)
 

@@ -65,7 +65,7 @@ class ArtistInfoFrame(CustomFrame):
 		self.text.setText(text)
 
 	def updateArtist(self):
-		if self.presenter.playerGetCurTag().artist in self.cahe:
+		if self.presenter.song.artist in self.cahe:
 			self.text.setText(self.cahe[ self.artist])
 			return True
 		return False

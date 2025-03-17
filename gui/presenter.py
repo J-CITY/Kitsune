@@ -425,7 +425,7 @@ class Presenter:
 	def artistinfoUpdateText(self):#+
 		if not self.useInternet:
 			return ''
-		if self.frames[FRAME_ARTIST_INFO].updateArtist():
+		if self.frames[FRAME_ARTIST_INFO].updateArtist() or not self.song:
 			return
 
 		r = Request(ReuestEnum.GET_ARTISI_BIO, 
@@ -433,24 +433,24 @@ class Presenter:
 			self.frames[FRAME_ARTIST_INFO].updateArtistCb)
 		self.addRequest(r)
 
-	def lyricsUpdateTextAsync(self, artist, song, server = None):
-		if server:
-			localserver = server
-		else:
-			localserver = Proxy("PYRONAME:kitsune.music.daemon")
-		text = localserver.lyricsGetSongLyrics(artist, song)
-		if self.frames[FRAME_LYRICS].artist == artist and self.frames[FRAME_LYRICS].song == song:
-			self.frames[FRAME_LYRICS].setText(text)
-		else:
-			self.lyricsUpdateTextAsync(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song, localserver)
+	#def lyricsUpdateTextAsync(self, artist, song, server = None):
+	#	if server:
+	#		localserver = server
+	#	else:
+	#		localserver = Proxy("PYRONAME:kitsune.music.daemon")
+	#	text = localserver.lyricsGetSongLyrics(artist, song)
+	#	if self.frames[FRAME_LYRICS].artist == artist and self.frames[FRAME_LYRICS].song == song:
+	#		self.frames[FRAME_LYRICS].setText(text)
+	#	else:
+	#		self.lyricsUpdateTextAsync(self.frames[FRAME_LYRICS].artist, self.frames[FRAME_LYRICS].song, localserver)
 
 	def lyricsUpdateText(self):#+
 		if not self.useInternet:
 			return
-		if self.frames[FRAME_LYRICS].updateArtistSong():
+		if self.frames[FRAME_LYRICS].updateArtistSong() or not self.song:
 			return
 		r = Request(ReuestEnum.GET_LYRICS, 
-			{'artist': self.song.artist, 'song': self.song.song}, 
+			{'artist': self.song.artist, 'song': self.song.song, 'ymId': None if self.song.globalId == -1 else self.song.globalId }, 
 			self.frames[FRAME_LYRICS].updateLyricsCb)
 		self.addRequest(r)
 
@@ -488,6 +488,12 @@ class Presenter:
 	
 	def getYandexMusicPlaylist(self, name):#+
 		return self.server.yandexMusicGetPlaylist(name)
+	
+	def getYandexMusicAlbums(self):#+
+		return self.server.yandexMusicGetAlbums()
+	
+	def getYandexMusicAlbum(self, name):#+
+		return self.server.yandexMusicGetAlbum(name)
 
 	def getYandexMusicPlaylistAsync(self, name):#+
 		if not self.useInternet:
@@ -533,7 +539,7 @@ class Presenter:
 					case ReuestEnum.YM_GET_FAVORITES:
 						r.callback(localserver.yandexMusicGetFavorites())
 					case ReuestEnum.GET_LYRICS:
-						res = localserver.lyricsGetSongLyrics(r.payload["artist"], r.payload["song"])
+						res = localserver.lyricsGetSongLyrics(r.payload["artist"], r.payload["song"], r.payload["ymId"])
 						r.callback(res, r.payload["artist"], r.payload["song"])
 					case ReuestEnum.GET_ARTISI_BIO:
 						res = localserver.lastfmGetArtistBio(r.payload["artist"])

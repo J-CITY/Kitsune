@@ -72,9 +72,9 @@ class MainPlaylistFrame(CustomFrame):
 			self.layout.add_widget(self.image, 0)
 			self.layout.add_widget(self.table, 1)
 		else:
-			self.layout = Layout([1], fill_frame=True)
-			self.add_layout(self.layout)
-			self.layout.add_widget(self.table, 0)
+			layout = Layout([1], fill_frame=True)
+			self.add_layout(layout)
+			layout.add_widget(self.table, 0)
 		self.addDownBar()
 		self.fix()
 

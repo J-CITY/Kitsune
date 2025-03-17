@@ -11,7 +11,7 @@ from core.tag_controller import *
 from multiprocessing import Process
 from core.strings import OS_LINUX, OS_WIN
 
-#TODO not now: Add YM Flow (maybe my albums)
+#TODO not now: Add YM Flow
 
 class PlayMode:
 	MOD_ONE_SONG = 0
@@ -70,6 +70,7 @@ class Player:
 			self.modes = [PlayMode.MOD_PLAYLIST_CIRCLE]
 		self.mode = self.modes[0]
 
+		self.crossfade = False
 		if playerCache:
 			self.crossfade = playerCache["crossfade"]
 			if playerCache["mode"] in self.modes:
@@ -185,9 +186,8 @@ class Player:
 		else:
 			fxch = BASS_StreamCreateFile(False, _url, 0, 0, BASS_UNICODE|BASS_STREAM_DECODE)
 			self.streams[self.streamsId] = self.BASS_FX_TempoCreate(fxch, BASS_FX_FREESOURCE)
-		#log(LogLevel.Info, _url.encode("utf-8"))
+		print("_play", self.streamsId)
 		BASS_ChannelPlay(self.streams[self.streamsId], False)
-		
 		self.setEqParams()
 
 	def stop(self):
@@ -241,6 +241,7 @@ class Player:
 		else:
 			if self.streams[self.streamsId] == 0:
 				self.playlistId = 0
+				print("play from pouse")
 				self.play()
 			else:
 				print("play 2")
@@ -304,7 +305,7 @@ class Player:
 				_buf = BASS_ChannelGetPosition(self.streams[self.streamsId], BASS_POS_BYTE)
 				_slen = BASS_ChannelBytes2Seconds(self.streams[self.streamsId], _len)
 				_sbuf = BASS_ChannelBytes2Seconds(self.streams[self.streamsId], _buf)
-				if _slen - _sbuf <= canPlay:
+				if _slen > 0 and _slen - _sbuf <= canPlay:
 					lenPl = len(self.playlist.tracks)
 					if self.mode == PlayMode.MOD_PLAYLIST_CIRCLE and lenPl > 0:
 						self.playlistId += 1
@@ -324,7 +325,7 @@ class Player:
 						self.stop()
 						time.sleep(.200)
 						continue
-
+					print("update play")
 					self.play()
 			time.sleep(.200)
 
