@@ -1,6 +1,6 @@
 # Kitsune - music player daemon with text user interface client
 
-![Screenshot](https://github.com/J-CITY/Kitsune/blob/daemon/screens/main0.png)
+![Screenshot](https://github.com/J-CITY/Kitsune/blob/daemon/screens/main1.png)
 
 ## Description
 Powerful console music player written with Python.
